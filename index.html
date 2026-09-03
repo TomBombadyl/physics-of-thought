@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080B">
 <title>Physics of Thought Build</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap">
 
@@ -15,11 +21,13 @@
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
+  html{-webkit-text-size-adjust:100%;}
   body{
     margin:0;background:var(--ground);color:var(--mid);
     font-family:"IBM Plex Sans",system-ui,sans-serif;
     overflow:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior:none;
   }
+  button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
   canvas.drag{cursor:grabbing;}
 
@@ -30,11 +38,13 @@
     padding:18px 18px 14px;z-index:5;overflow-y:auto;
     display:flex;flex-direction:column;gap:15px;
   }
+  .spec-head{display:contents;}
   .spec h1{
     margin:0;font-size:15px;font-weight:600;letter-spacing:.02em;color:var(--bright);
   }
   .spec h1 span{display:block;font-weight:300;font-size:10.5px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);margin-top:5px;}
+  .spec-close,.fab,.spec-scrim{display:none;}
   .grp{display:flex;flex-direction:column;gap:6px;}
   .grp > h2{
     margin:0;font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
@@ -147,13 +157,38 @@
     .spec{
       left:0;right:0;top:0;bottom:auto;width:100%;height:auto;
       border-right:none;border-bottom:1px solid var(--rule);
-      gap:7px;padding:10px 13px 11px;overflow:visible;
+      gap:7px;padding:max(10px,env(safe-area-inset-top,0px)) 13px 11px;
+      overflow:visible;z-index:6;
     }
+    .spec-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
     .spec h1{font-size:13px;}
     .spec h1 span{margin-top:3px;}
     .spec .grp,.spec .note{display:none;}
     .compact{display:flex;}
-    .bar{left:0;padding-top:9px;}
+    .spec-close{
+      display:block;appearance:none;flex:none;
+      min-height:36px;padding:6px 10px;
+      background:transparent;border:1px solid var(--rule);border-radius:2px;
+      color:var(--dim);cursor:pointer;
+      font-family:"IBM Plex Mono",monospace;font-size:10px;
+      letter-spacing:.12em;text-transform:uppercase;
+    }
+    body:not(.spec-open) .spec{display:none;}
+    .fab{
+      display:block;position:fixed;z-index:6;
+      left:max(10px,env(safe-area-inset-left,0px));
+      top:max(10px,env(safe-area-inset-top,0px));
+      appearance:none;min-height:40px;padding:8px 12px;
+      background:var(--panel);border:1px solid var(--rule);border-radius:2px;
+      color:var(--bright);cursor:pointer;
+      font-family:"IBM Plex Mono",monospace;font-size:11px;
+      letter-spacing:.12em;text-transform:uppercase;
+    }
+    body.spec-open .fab{display:none;}
+    .bar{
+      left:0;
+      padding:9px max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+    }
     .bar .lab{display:none;}
     .status{
       position:static;text-align:left;display:flex;
@@ -164,18 +199,24 @@
     .legend{display:none;}
     .toggles{
       top:auto;bottom:auto;right:auto;position:static;
-      flex-direction:row;justify-content:flex-start;
+      flex-direction:row;justify-content:flex-start;flex-wrap:wrap;
     }
-    button.t{padding:5px 8px;font-size:9px;}
-    button.k{flex:1 1 76px;font-size:9.5px;padding:12px 3px;}
+    button.t{padding:8px 10px;font-size:11px;min-height:36px;}
+    button.k{flex:1 1 92px;font-size:11px;padding:12px 6px;min-height:42px;}
   }
 </style>
+</head>
+<body>
 
 <canvas id="gl"></canvas>
 <div class="notice" id="notice" hidden></div>
+<button class="fab" id="spec-toggle" type="button" aria-expanded="false" aria-controls="spec">Specs</button>
 
-<div class="spec">
-  <h1>Physics of Thought<span>Build · rev A</span></h1>
+<div class="spec" id="spec">
+  <div class="spec-head">
+    <h1>Physics of Thought<span>Build · rev A</span></h1>
+    <button class="spec-close" id="spec-close" type="button">Close</button>
+  </div>
 
   <div class="grp">
     <h2>Structure</h2>
@@ -913,6 +954,23 @@ function placeChrome(){
 }
 addEventListener("resize",placeChrome);
 
+function phone(){ return innerWidth<=820; }
+function setSpecOpen(open){
+  document.body.classList.toggle("spec-open", !!open);
+  const btn=document.getElementById("spec-toggle");
+  if(btn) btn.setAttribute("aria-expanded", open?"true":"false");
+}
+function initSpecChrome(){
+  setSpecOpen(!phone());
+  document.getElementById("spec-toggle").addEventListener("click",()=>setSpecOpen(true));
+  document.getElementById("spec-close").addEventListener("click",()=>setSpecOpen(false));
+  let wasPhone=phone();
+  addEventListener("resize",()=>{
+    const now=phone();
+    if(now!==wasPhone){ wasPhone=now; setSpecOpen(!now); }
+  });
+}
+
 function fmt(n,d){return n.toLocaleString(undefined,{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
 function fillSpec(){
   const totalM=stats.armM+stats.runM;
@@ -983,7 +1041,10 @@ initBuffers();
 buildUI();
 fillSpec();
 placeChrome();
+initSpecChrome();
 resize();
 requestAnimationFrame(frame);
 })();
 </script>
+</body>
+</html>
