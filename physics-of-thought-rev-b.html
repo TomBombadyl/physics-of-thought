@@ -1,0 +1,2134 @@
+<title>The Physics of Thought</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400;1,6..96,500&family=Jost:wght@200;300;400&family=IBM+Plex+Mono:wght@300;400;500&display=swap">
+
+<style>
+  :root{
+    --void:#04030A;
+    --ash:#0A0912;
+    --etch:#A8ADC6;
+    --etch-dim:#767B9C;
+    --fiber:#CFCBE8;
+    --crown:#F4F1FF;
+    --amber:#E9A45C;
+    --amber-dim:#7A5730;
+    --stim:#6FE9FF;
+    --hair:rgba(170,160,215,.13);
+    --hair-strong:rgba(185,175,230,.28);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--fiber);
+    font-family:"Jost",ui-sans-serif,system-ui,"Helvetica Neue",Arial,sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+
+  #stage{position:fixed;inset:0;background:var(--void);}
+  #gl{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+  #gl.dragging{cursor:grabbing;}
+
+  /* ---------- nameplate ---------- */
+  .plate{
+    position:fixed;left:clamp(14px,3vw,34px);top:clamp(14px,3vh,28px);
+    z-index:5;pointer-events:none;
+  }
+  .plate h1{
+    margin:0;
+    font-family:"Jost",ui-sans-serif,"Helvetica Neue",Arial,sans-serif;
+    font-weight:200;
+    font-size:clamp(21px,3.4vw,36px);
+    line-height:1.12;
+    letter-spacing:.10em;
+    text-transform:uppercase;
+    color:var(--crown);
+    text-wrap:balance;
+    text-shadow:0 0 30px rgba(150,120,220,.32);
+  }
+  .plate .sub{
+    margin:10px 0 0;font-size:clamp(8.5px,1.15vw,11px);
+    font-weight:300;letter-spacing:.20em;text-transform:uppercase;
+    color:var(--etch);line-height:1.5;
+  }
+  .plate .rule{
+    height:1px;width:64px;margin:11px 0 9px;
+    background:linear-gradient(90deg,var(--amber-dim),rgba(233,164,92,.04));
+  }
+  .plate p.meta{
+    margin:0;font-family:"IBM Plex Mono",monospace;
+    font-size:9px;letter-spacing:.20em;text-transform:uppercase;
+    color:var(--etch-dim);font-weight:400;
+  }
+
+  /* ---------- instrument readout ---------- */
+  .readout{
+    position:fixed;right:clamp(14px,3vw,34px);top:clamp(14px,3vh,28px);
+    z-index:5;pointer-events:none;text-align:right;
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    font-variant-numeric:tabular-nums;
+    display:flex;flex-direction:column;gap:5px;
+    min-width:min(48vw,224px);
+  }
+  .readout .row{display:flex;justify-content:space-between;gap:14px;align-items:baseline;}
+  .readout .k{color:var(--etch-dim);font-weight:400;}
+  .readout .v{color:var(--etch);font-weight:500;}
+  .readout .v.hot{color:var(--stim);transition:color .5s ease;}
+  .readout .bar{
+    height:1px;background:var(--hair);margin:3px 0 1px;position:relative;overflow:hidden;
+  }
+  .readout .bar i{
+    position:absolute;left:0;top:0;bottom:0;width:0%;background:var(--stim);
+    box-shadow:0 0 8px var(--stim);transition:width .12s linear;
+  }
+  .readout .note{
+    color:var(--etch-dim);font-size:9px;letter-spacing:.16em;
+    min-height:12px;text-transform:uppercase;
+  }
+
+  /* ---------- console ---------- */
+  .console-wrap{
+    position:fixed;left:0;right:0;bottom:0;z-index:6;
+    display:flex;justify-content:center;
+    perspective:1100px;perspective-origin:50% 0%;
+    pointer-events:none;
+  }
+  .console{
+    pointer-events:auto;
+    transform:rotateX(13deg);
+    transform-origin:50% 100%;
+    width:min(880px,95vw);
+    padding:clamp(11px,1.7vh,19px) clamp(12px,2.4vw,30px) clamp(14px,2.4vh,24px);
+    background:
+      radial-gradient(120% 150% at 50% -20%,rgba(46,40,70,.85) 0%,rgba(15,13,24,.97) 55%,rgba(5,4,10,.99) 100%);
+    border-top:1px solid var(--hair-strong);
+    border-left:1px solid var(--hair);
+    border-right:1px solid var(--hair);
+    border-radius:12px 12px 0 0;
+    box-shadow:
+      0 -54px 100px -34px rgba(90,70,150,.22),
+      inset 0 1px 0 rgba(215,205,255,.12),
+      0 -1px 0 rgba(0,0,0,.6);
+    display:flex;flex-direction:column;gap:clamp(6px,1.1vh,11px);
+  }
+  .row{display:flex;flex-direction:column;gap:clamp(4px,.7vh,7px);}
+  .legend{
+    font-family:"Bodoni Moda",Didot,"Times New Roman",serif;
+    font-style:italic;
+    font-size:clamp(9.5px,1.28vw,14px);
+    letter-spacing:.13em;
+    color:var(--crown);
+    text-align:center;
+    line-height:1.2;
+    opacity:.9;
+  }
+  .legend em{
+    font-style:italic;font-size:.76em;letter-spacing:.06em;
+    color:var(--etch-dim);
+  }
+  .row.pending .legend{color:var(--etch);opacity:.62;}
+  .keys{display:flex;justify-content:center;gap:clamp(5px,.9vw,12px);}
+
+  button.key{
+    position:relative;appearance:none;min-width:0;
+    flex:0 1 clamp(84px,13.5vw,152px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:clamp(3px,.6vh,6px);
+    padding:clamp(6px,1vh,11px) 2px clamp(5px,.85vh,9px);
+    background:linear-gradient(180deg,rgba(38,33,56,.9) 0%,rgba(17,15,26,.95) 60%,rgba(9,8,15,.97) 100%);
+    border:1px solid rgba(160,150,205,.13);
+    border-top-color:rgba(200,190,245,.20);
+    border-radius:7px;
+    color:var(--etch);
+    font-family:"Bodoni Moda",Didot,"Times New Roman",serif;
+    font-style:italic;
+    font-size:clamp(8px,1.02vw,11px);
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:background .18s ease,border-color .18s ease,color .18s ease,transform .07s ease;
+  }
+  button.key .led{
+    width:clamp(15px,2.1vw,23px);aspect-ratio:1;border-radius:50%;
+    border:2px solid var(--k);
+    background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--k) 26%,transparent) 0%,transparent 68%);
+    box-shadow:0 0 9px -1px var(--k),inset 0 0 7px -2px var(--k);
+    opacity:.62;
+    transition:opacity .3s ease,box-shadow .4s ease,transform .18s ease;
+  }
+  button.key .lab{white-space:nowrap;overflow:hidden;}
+  button.key:hover{border-color:rgba(200,190,245,.30);color:var(--crown);}
+  button.key:hover .led{opacity:.9;}
+  button.key:focus-visible{outline:1px solid var(--stim);outline-offset:2px;}
+  button.key:active{transform:translateY(1px);}
+  button.key.armed{color:var(--crown);border-color:color-mix(in srgb,var(--k) 42%,transparent);}
+  button.key.armed .led{
+    opacity:1;transform:scale(1.06);
+    box-shadow:0 0 16px var(--k),0 0 34px -6px var(--k),inset 0 0 11px -2px var(--k);
+  }
+  button.key.pending{color:var(--etch-dim);}
+  button.key.pending .led{opacity:.26;box-shadow:0 0 6px -2px var(--k);}
+  button.key.pending:hover .led{opacity:.44;}
+
+  .speed{
+    display:flex;align-items:center;gap:11px;
+    font-family:"IBM Plex Mono",monospace;font-size:9px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--etch-dim);
+    padding:1px 2px 0;
+  }
+  .speed input{
+    -webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:70px;
+    height:2px;border-radius:2px;outline:none;cursor:pointer;
+    background:rgba(170,160,215,.22);
+  }
+  .speed input::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--stim);cursor:pointer;box-shadow:0 0 11px -1px var(--stim);
+  }
+  .speed input::-moz-range-thumb{
+    width:14px;height:14px;border:none;border-radius:50%;
+    background:var(--stim);cursor:pointer;box-shadow:0 0 11px -1px var(--stim);
+  }
+  .speed input:focus-visible{outline:1px solid var(--stim);outline-offset:3px;}
+  .speed .val{color:var(--crown);min-width:100px;text-align:right;
+    font-variant-numeric:tabular-nums;letter-spacing:.10em;}
+  .foot{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--etch-dim);
+    border-top:1px solid var(--hair);padding-top:7px;
+  }
+  .foot .stage-tag{color:var(--amber-dim);}
+
+  /* ---------- loader ---------- */
+  #loader{
+    position:fixed;inset:0;z-index:20;background:var(--void);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    transition:opacity .9s ease;
+  }
+  #loader.gone{opacity:0;pointer-events:none;}
+  #loader .t{
+    font-family:"Jost",ui-sans-serif,sans-serif;font-weight:200;
+    font-size:clamp(15px,2.6vw,26px);
+    letter-spacing:.18em;text-transform:uppercase;color:var(--crown);
+  }
+  #loader .s{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--etch-dim);
+  }
+  #loader .track{width:min(240px,52vw);height:1px;background:var(--hair);position:relative;overflow:hidden;}
+  #loader .track i{position:absolute;inset:0 100% 0 0;background:var(--fiber);transition:right .3s ease;}
+
+  .hint{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(clamp(112px,20vh,190px));
+    z-index:5;font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--etch-dim);pointer-events:none;opacity:.75;transition:opacity 1s ease;
+  }
+  .hint.gone{opacity:0;}
+
+  /* On a phone the readout moves into the console, where the eye already is,
+     and gets real size. JS relocates the node; these styles reshape it. */
+  .readout.inpanel{
+    position:static;width:100%;min-width:0;text-align:left;
+    display:grid;grid-template-columns:auto 1fr;
+    gap:5px 14px;align-items:baseline;
+    font-size:11.5px;letter-spacing:.06em;
+    padding:0 2px 9px;margin-bottom:1px;
+    border-bottom:1px solid var(--hair);
+  }
+  .readout.inpanel .row{display:contents;}
+  .readout.inpanel .k{font-size:10px;text-align:left;}
+  .readout.inpanel .v{font-size:12px;text-align:right;}
+  .readout.inpanel #r-stage{color:var(--stim);font-size:12.5px;}
+  .readout.inpanel #row-fire{display:none;}
+  .readout.inpanel .bar{grid-column:1/-1;margin:2px 0 0;height:2px;}
+  .readout.inpanel .note{grid-column:1/-1;font-size:10.5px;color:var(--etch);}
+
+  @media (pointer:coarse){
+    button.key{min-height:54px;}
+    button.key .lab{font-size:11px;letter-spacing:.02em;}
+  }
+  @media (max-width:620px){
+    .plate h1{font-size:clamp(17px,5vw,24px);letter-spacing:.07em;}
+    .plate .sub{display:none;}
+    .plate p.meta{font-size:8.5px;letter-spacing:.12em;}
+    .plate h1,.plate p.meta{text-shadow:0 1px 12px rgba(0,0,0,.85);}
+    .foot{display:none;}
+    .console{padding-left:10px;padding-right:10px;transform:rotateX(8deg);}
+    .legend{font-size:11px;letter-spacing:.06em;}
+    .keys{gap:6px;}
+    button.key{flex:0 1 clamp(76px,23vw,112px);}
+    button.key{border-radius:6px;padding-left:1px;padding-right:1px;}
+    button.key .led{width:14px;}
+    .hint{display:none;}
+  }
+  @media (max-width:430px){
+    .legend em{display:none;}
+    button.key .lab{font-size:9.5px;}
+  }
+  @media (max-height:680px){
+    .foot{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .readout .bar i{transition:none;}
+  }
+</style>
+
+<div id="stage"><canvas id="gl"></canvas></div>
+
+<div class="plate">
+  <h1>The Physics<br>of Thought</h1>
+  <div class="sub">Interactive neural<br>sculpture concept</div>
+  <div class="rule"></div>
+  <p class="meta">Digital twin · rev B · ten inputs · lounge</p>
+</div>
+
+<div class="readout" id="readout">
+  <div class="row"><span class="k">Stimulus</span><span class="v hot" id="r-stim">—</span></div>
+  <div class="row"><span class="k">Elapsed</span><span class="v" id="r-time">0.00 s</span></div>
+  <div class="row wide"><span class="k">Stage</span><span class="v" id="r-stage">Resting state</span></div>
+  <div class="row" id="row-fire"><span class="k">Firing</span><span class="v" id="r-fire">0 / 0</span></div>
+  <div class="bar"><i id="r-bar"></i></div>
+  <div class="row wide"><span class="k">Residual trace</span><span class="v" id="r-trace">—</span></div>
+  <div class="note" id="r-note"></div>
+</div>
+
+<div class="hint" id="hint">Drag to orbit · pinch or scroll to zoom</div>
+
+<div class="console-wrap">
+  <div class="console" id="console">
+    <div class="row" data-row="sensations">
+      <div class="legend">Sensations <em>(Input from environment)</em></div>
+      <div class="keys" id="row-1"></div>
+    </div>
+    <div class="row" data-row="experiences">
+      <div class="legend">Experiences <em>(Affective / bodily states)</em></div>
+      <div class="keys" id="row-2"></div>
+    </div>
+    <div class="row" data-row="thought">
+      <div class="legend">Thought <em>(Higher-order cognition)</em></div>
+      <div class="keys" id="row-3"></div>
+    </div>
+    <div class="speed">
+      <span>Speed</span>
+      <input type="range" id="spd" min="0" max="100" value="0"
+             aria-label="Simulation speed, watchable to real time">
+      <span class="val" id="spd-val">&times;1.0 watchable</span>
+    </div>
+    <div class="foot">
+      <span id="foot-left">Initialising</span>
+      <span class="stage-tag">10 inputs · each on its own pathway</span>
+    </div>
+  </div>
+</div>
+
+<div id="loader">
+  <div class="t">The Physics of Thought</div>
+  <div class="track"><i id="ld-bar"></i></div>
+  <div class="s" id="ld-msg">Resolving cortical surface</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   TUNING — everything an art director touches lives here.
+   ============================================================ */
+const T = {
+  cortexAlpha:      0.130,   // per-point additive alpha of the cortical membrane
+  cortexPointScale: 430.0,   // screen-space size multiplier
+  rimGain:          0.78,    // fresnel weight — what makes gyri read as inflated sacs
+  foldAmp:          1.02,    // gyral relief, cm
+  foldFreq:         0.58,    // ~1.7 cm gyral wavelength
+  shellDepth:       0.30,    // membrane thickness, cm
+  nodeGlow:         1.00,
+  starCount:        2600,    // bright pinpoint LEDs seeded across the membrane
+  edgeBase:         0.050,   // resting visibility of the wiring
+  pulseWidth:       0.085,   // gaussian sigma along an edge, in u
+  fogNear:          22.0,
+  fogFar:           120.0,
+  floorFade:        -15.5,   // below this the roots dissolve into the playa dark
+  floorFadeSpan:    5.0,
+  trunkCount:       200,     // root filaments flaring from the brainstem
+  baseY:            -13.2,   // the plinth
+  baseR:            10.5
+};
+
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const COARSE  = window.matchMedia("(pointer: coarse)").matches;
+const SMALL   = Math.min(innerWidth, innerHeight) < 620;
+const LOW     = COARSE || SMALL;
+
+/* ============================================================
+   MATH + NOISE
+   ============================================================ */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const smoothstep=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+let _seed=1337;
+function rnd(){ _seed=(_seed*1664525+1013904223)>>>0; return _seed/4294967296; }
+
+// --- 3D simplex noise (Gustavson, compacted) ---
+const GRAD3=[1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1];
+const PERM=new Uint8Array(512), P0=new Uint8Array(256);
+for(let i=0;i<256;i++) P0[i]=i;
+for(let i=255;i>0;i--){const j=(rnd()*(i+1))|0;const t=P0[i];P0[i]=P0[j];P0[j]=t;}
+for(let i=0;i<512;i++) PERM[i]=P0[i&255];
+const F3=1/3, G3=1/6;
+function noise3(x,y,z){
+  const s=(x+y+z)*F3;
+  const i=Math.floor(x+s), j=Math.floor(y+s), k=Math.floor(z+s);
+  const t=(i+j+k)*G3;
+  const x0=x-(i-t), y0=y-(j-t), z0=z-(k-t);
+  let i1,j1,k1,i2,j2,k2;
+  if(x0>=y0){
+    if(y0>=z0){i1=1;j1=0;k1=0;i2=1;j2=1;k2=0;}
+    else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1;}
+    else {i1=0;j1=0;k1=1;i2=1;j2=0;k2=1;}
+  } else {
+    if(y0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1;}
+    else if(x0<z0){i1=0;j1=1;k1=0;i2=0;j2=1;k2=1;}
+    else {i1=0;j1=1;k1=0;i2=1;j2=1;k2=0;}
+  }
+  const x1=x0-i1+G3, y1=y0-j1+G3, z1=z0-k1+G3;
+  const x2=x0-i2+2*G3, y2=y0-j2+2*G3, z2=z0-k2+2*G3;
+  const x3=x0-1+3*G3, y3=y0-1+3*G3, z3=z0-1+3*G3;
+  const ii=i&255, jj=j&255, kk=k&255;
+  let n=0;
+  let t0=0.6-x0*x0-y0*y0-z0*z0;
+  if(t0>0){const g=(PERM[ii+PERM[jj+PERM[kk]]]%12)*3;t0*=t0;n+=t0*t0*(GRAD3[g]*x0+GRAD3[g+1]*y0+GRAD3[g+2]*z0);}
+  let t1=0.6-x1*x1-y1*y1-z1*z1;
+  if(t1>0){const g=(PERM[ii+i1+PERM[jj+j1+PERM[kk+k1]]]%12)*3;t1*=t1;n+=t1*t1*(GRAD3[g]*x1+GRAD3[g+1]*y1+GRAD3[g+2]*z1);}
+  let t2=0.6-x2*x2-y2*y2-z2*z2;
+  if(t2>0){const g=(PERM[ii+i2+PERM[jj+j2+PERM[kk+k2]]]%12)*3;t2*=t2;n+=t2*t2*(GRAD3[g]*x2+GRAD3[g+1]*y2+GRAD3[g+2]*z2);}
+  let t3=0.6-x3*x3-y3*y3-z3*z3;
+  if(t3>0){const g=(PERM[ii+1+PERM[jj+1+PERM[kk+1]]]%12)*3;t3*=t3;n+=t3*t3*(GRAD3[g]*x3+GRAD3[g+1]*y3+GRAD3[g+2]*z3);}
+  return 32*n;
+}
+
+/* ============================================================
+   STAGE 1 — BRAIN GEOMETRY (implicit surface, base space)
+   Coordinates: +x right, +y superior, +z anterior. Units = cm.
+   fBase() is evaluated on |x| so the shape is symmetric; points
+   are generated on the right half and mirrored.
+   ============================================================ */
+function sdEllipsoid(px,py,pz,rx,ry,rz){
+  const ax=px/rx, ay=py/ry, az=pz/rz;
+  const k0=Math.sqrt(ax*ax+ay*ay+az*az);
+  if(k0<1e-6) return -Math.min(rx,ry,rz);
+  const bx=px/(rx*rx), by=py/(ry*ry), bz=pz/(rz*rz);
+  const k1=Math.sqrt(bx*bx+by*by+bz*bz);
+  return k0*(k0-1)/Math.max(k1,1e-6);
+}
+function sdCapsule(px,py,pz,ax,ay,az,bx,by,bz,r){
+  const pax=px-ax,pay=py-ay,paz=pz-az;
+  const bax=bx-ax,bay=by-ay,baz=bz-az;
+  let h=(pax*bax+pay*bay+paz*baz)/Math.max(bax*bax+bay*bay+baz*baz,1e-6);
+  h=h<0?0:h>1?1:h;
+  const dx=pax-bax*h, dy=pay-bay*h, dz=paz-baz*h;
+  return Math.sqrt(dx*dx+dy*dy+dz*dz)-r;
+}
+function smin(a,b,k){const h=clamp(0.5+0.5*(b-a)/k,0,1);return lerp(b,a,h)-k*h*(1-h);}
+function smax(a,b,k){return -smin(-a,-b,k);}
+
+const MEDIAL_GAP=0.30, INF_PLANE=-4.95;
+
+function fBase(x,y,z){
+  const X=x<0?-x:x;
+  // cerebral hemisphere
+  let cer=sdEllipsoid(X-2.00,y-0.30,z,4.78,5.30,8.40);
+  cer=Math.max(cer, INF_PLANE-y);        // flat inferior surface
+  // temporal lobe
+  let tmp=sdEllipsoid(X-3.95,y+3.30,z-0.60,2.05,1.95,5.10);
+  tmp=Math.max(tmp, INF_PLANE-y);
+  let d=smin(cer,tmp,1.30);
+  // Sylvian fissure — carved along the lateral surface
+  const syl=sdCapsule(X,y,z, 5.55,-1.95,4.55, 4.35,1.05,-3.30, 0.58);
+  d=smax(d,-syl,0.62);
+  // central sulcus — the diagonal frontal/parietal divide
+  const cs=sdCapsule(X,y,z, 0.55,5.30,0.30, 5.35,0.60,1.95, 0.30);
+  d=smax(d,-cs,0.40);
+  // longitudinal fissure — flat medial wall
+  d=Math.max(d, MEDIAL_GAP-X);
+  // cerebellum (kept separate so the tentorial cleft stays visible)
+  let cb=sdEllipsoid(X-2.45,y+5.45,z+5.95,2.48,1.78,2.70);
+  cb=smin(cb,sdEllipsoid(X,y+5.25,z+6.00,1.02,1.52,2.38),0.45); // vermis
+  d=Math.min(d,cb);
+  // brainstem: midbrain → pons → medulla → cord
+  let bs=sdCapsule(X,y,z, 0,-2.90,0.10, 0,-5.00,-0.70, 0.92);
+  bs=smin(bs,sdEllipsoid(X,y+5.05,z+0.30,1.42,1.15,1.10),0.35);      // pons
+  bs=smin(bs,sdCapsule(X,y,z, 0,-5.00,-0.70, 0,-7.60,-1.55, 0.74),0.30);
+  bs=smin(bs,sdCapsule(X,y,z, 0,-7.60,-1.55, 0,-15.5,-2.10, 0.46),0.30); // cord
+  d=smin(d,bs,0.50);
+  return d;
+}
+
+// Anatomical warp applied to every point (surface, nodes, emitters).
+function warp(p){
+  const uz=clamp(p.z/8.40,-1,1);
+  const f=smoothstep(0.24,1.0,uz);     // frontal
+  const o=smoothstep(0.42,1.0,-uz);    // occipital
+  const body=smoothstep(-0.55,-1.0,p.y/8.0); // spare the stem/cord
+  const sx=1-(0.26*f+0.19*o)*(1-body);
+  const sy=1-(0.17*f+0.13*o)*(1-body);
+  p.x*=sx;
+  p.y=p.y*sy-(0.62*f-0.24*o)*(1-body);
+  return p;
+}
+
+const GEPS=0.022, _g=new Float32Array(3);
+function gradAt(x,y,z){
+  const d=fBase(x,y,z);
+  _g[0]=fBase(x+GEPS,y,z)-d; _g[1]=fBase(x,y+GEPS,z)-d; _g[2]=fBase(x,y,z+GEPS)-d;
+  const l=Math.hypot(_g[0],_g[1],_g[2])||1e-6;
+  _g[0]/=l;_g[1]/=l;_g[2]/=l;
+  return d;
+}
+// Push a point onto the f=level isosurface. Returns final |f| residual.
+function project(p,level,iters){
+  let d=0;
+  for(let i=0;i<iters;i++){
+    d=gradAt(p.x,p.y,p.z)-level;
+    if(Math.abs(d)<0.015) break;
+    const s=clamp(d,-0.65,0.65);
+    p.x-=_g[0]*s; p.y-=_g[1]*s; p.z-=_g[2]*s;
+  }
+  return Math.abs(gradAt(p.x,p.y,p.z)-level);
+}
+
+function fibSphere(i,n){
+  const y=1-(i/(n-1))*2;
+  const r=Math.sqrt(Math.max(0,1-y*y));
+  const th=i*2.399963229728653;
+  return [Math.cos(th)*r, y, Math.sin(th)*r];
+}
+
+// Candidate seeds: sample each primitive's own surface, keep what
+// survives on the combined isosurface. Catches undercuts a radial
+// projection would miss (temporal underside, tentorial cleft).
+const SEEDS = LOW ? [
+  {c:[2.00,0.30,0.00],   r:[4.78,5.30,8.40], n:26000, kind:0},
+  {c:[3.95,-3.30,0.60],  r:[2.05,1.95,5.10], n:8000,  kind:0},
+  {c:[2.45,-5.45,-5.95], r:[2.48,1.78,2.70], n:8000,  kind:1},
+  {c:[0.00,-5.25,-6.00], r:[1.02,1.52,2.38], n:2600,  kind:1},
+  {c:[0.00,-5.05,-0.30], r:[1.55,1.30,1.25], n:2200,  kind:2},
+  {c:[0.00,-10.0,-1.80], r:[0.62,5.60,0.62], n:2600,  kind:2}
+] : [
+  {c:[2.00,0.30,0.00],   r:[4.78,5.30,8.40], n:62000, kind:0},
+  {c:[3.95,-3.30,0.60],  r:[2.05,1.95,5.10], n:19000, kind:0},
+  {c:[2.45,-5.45,-5.95], r:[2.48,1.78,2.70], n:19000, kind:1},
+  {c:[0.00,-5.25,-6.00], r:[1.02,1.52,2.38], n:6000,  kind:1},
+  {c:[0.00,-5.05,-0.30], r:[1.55,1.30,1.25], n:5000,  kind:2},
+  {c:[0.00,-10.0,-1.80], r:[0.62,5.60,0.62], n:6000,  kind:2}
+];
+// kind: 0 = cortex (gyri), 1 = cerebellum (folia), 2 = stem/cord (smooth)
+
+function buildCortex(){
+  const pos=[], nrm=[], fold=[], size=[];
+  const p={x:0,y:0,z:0};
+  for(const S of SEEDS){
+    for(let i=0;i<S.n;i++){
+      const u=fibSphere(i,S.n);
+      p.x=S.c[0]+u[0]*S.r[0]; p.y=S.c[1]+u[1]*S.r[1]; p.z=S.c[2]+u[2]*S.r[2];
+      if(p.x<-0.4) continue;                 // right half only; mirrored later
+      if(Math.abs(fBase(p.x,p.y,p.z))>1.10) continue;
+      if(project(p,0,3)>0.05) continue;
+      if(p.x<MEDIAL_GAP-0.06) continue;
+      gradAt(p.x,p.y,p.z);
+      let nx=_g[0],ny=_g[1],nz=_g[2];
+
+      // --- surface relief ---
+      let f=0.5, disp=0;
+      if(S.kind===0){
+        const a=1-Math.abs(noise3(p.x*T.foldFreq,p.y*T.foldFreq,p.z*T.foldFreq));
+        const b=1-Math.abs(noise3(p.x*T.foldFreq*2.15+31,p.y*T.foldFreq*2.15,p.z*T.foldFreq*2.15));
+        f=clamp(a*0.72+b*0.28,0,1);
+        disp=T.foldAmp*(Math.pow(f,1.7)-0.46);
+      } else if(S.kind===1){
+        // cerebellar folia: tight parallel bands, the giveaway detail
+        const band=Math.sin(15.0*(0.60*p.y+0.80*(p.z+5.95))+0.9*noise3(p.x*1.4,p.y*1.4,p.z*1.4));
+        f=clamp(0.46+0.26*band,0,1);
+        disp=0.052*band;
+      } else {
+        f=0.62; disp=0.05*noise3(p.x*1.9,p.y*1.9,p.z*1.9);
+      }
+      p.x+=nx*disp; p.y+=ny*disp; p.z+=nz*disp;
+
+      // shell thickness — the cloud has volume, not a skin
+      const t=rnd()*rnd()*T.shellDepth;
+      const q={x:p.x-nx*t, y:p.y-ny*t, z:p.z-nz*t};
+      warp(q);
+      const sz=(0.55+rnd()*0.85)*(S.kind===2?1.15:1.0);
+
+      pos.push(q.x,q.y,q.z, -q.x,q.y,q.z);
+      nrm.push(nx,ny,nz, -nx,ny,nz);
+      fold.push(f,f);
+      size.push(sz,sz);
+    }
+  }
+  return {pos,nrm,fold,size};
+}
+
+/* ============================================================
+   STAGE 2 + 3 — NEURAL POPULATIONS AND PATHWAYS
+   Every region is a distributed population. Nothing here is a
+   "centre" for anything: buttons drive pathways, not places.
+   ============================================================ */
+const REGIONS = {
+  // cortical populations, seated just inside the cortical sheet
+  V1:   {c:[1.30,-1.30,-7.30], s:[0.95,1.70,0.85], n:16, cortex:1},
+  V2:   {c:[2.60,-0.50,-6.40], s:[1.85,2.45,1.05], n:18, cortex:1},
+  V4:   {c:[3.60,-2.70,-5.00], s:[1.35,1.15,1.45], n:12, cortex:1},
+  MT:   {c:[5.10,0.60,-4.20],  s:[0.95,1.20,1.00], n:10, cortex:1},
+  IT:   {c:[4.40,-3.35,-1.20], s:[1.15,0.95,2.60], n:18, cortex:1},
+  PAR:  {c:[3.10,3.60,-3.00],  s:[2.00,1.35,1.85], n:18, cortex:1},
+  PCC:  {c:[0.85,3.30,-4.10],  s:[0.35,1.60,1.60], n:10, cortex:1},
+  S1:   {c:[3.00,4.35,-0.45],  s:[2.60,1.05,0.48], n:14, cortex:1},
+  M1:   {c:[3.00,4.35,1.05],   s:[2.60,1.05,0.48], n:12, cortex:1},
+  A1:   {c:[5.35,-0.60,-0.60], s:[0.80,0.80,1.45], n:12, cortex:1},
+  AUD:  {c:[5.15,-1.85,-2.45], s:[1.00,1.00,1.65], n:10, cortex:1},
+  PFC:  {c:[3.30,2.40,5.70],   s:[1.85,2.00,1.60], n:20, cortex:1},
+  OFC:  {c:[2.40,-3.20,5.50],  s:[1.60,0.75,1.40], n:10, cortex:1},
+  ACC:  {c:[0.85,2.55,3.10],   s:[0.35,1.65,2.00], n:12, cortex:1},
+  // buried / subcortical — placed by volume, not projected
+  INS:  {c:[4.30,-0.60,1.10],  s:[0.45,1.25,1.45], n:10, cortex:0},
+  THAL: {c:[1.70,-0.80,-0.20], s:[0.75,0.65,1.25], n:10, cortex:0},
+  LGN:  {c:[2.70,-1.95,-1.05], s:[0.32,0.28,0.32], n:4,  cortex:0},
+  MGN:  {c:[2.35,-1.60,-1.60], s:[0.28,0.26,0.28], n:4,  cortex:0},
+  VPL:  {c:[2.15,-0.55,-0.55], s:[0.34,0.30,0.34], n:4,  cortex:0},
+  AMY:  {c:[3.20,-3.45,2.35],  s:[0.55,0.45,0.55], n:6,  cortex:0},
+  CBM:  {c:[2.60,-5.40,-5.90], s:[1.95,1.10,2.00], n:16, cortex:0},
+  IC:   {c:[0.95,-2.95,-1.80], s:[0.30,0.28,0.30], n:3,  cortex:0},
+  CN:   {c:[1.55,-5.55,-1.00], s:[0.28,0.30,0.28], n:3,  cortex:0},
+  SOC:  {c:[0.90,-5.60,-0.85], s:[0.26,0.26,0.26], n:3,  cortex:0},
+  DCN:  {c:[0.75,-7.35,-1.60], s:[0.26,0.28,0.26], n:3,  cortex:0}
+};
+// midline populations (single copy, not mirrored)
+const CHAINS = {
+  HIPP:  {pts:[[3.40,-3.20,-2.60],[3.05,-2.95,0.35],[2.45,-3.35,1.85]], n:12, cortex:0},
+  ONERV: {pts:[[3.00,-3.20,9.00],[2.25,-3.35,7.30],[1.35,-3.50,6.00]],  n:6,  cortex:0},
+  OTRACT:{pts:[[1.30,-3.45,3.60],[2.15,-2.90,2.00],[2.60,-2.25,0.20]],  n:6,  cortex:0},
+  ORAD:  {pts:[[3.35,-2.70,-2.10],[3.45,-1.40,-4.30],[2.20,-1.25,-6.20]],n:8, cortex:0},
+  ALEM:  {pts:[[1.20,-6.60,-1.30],[1.60,-4.60,-1.00],[2.00,-2.20,-0.75]],n:7, cortex:0},
+  // Relay chains are ordered AFFERENT-FIRST: point 0 is the far end, the
+  // last point is the end nearest the brain. Pulses only travel that way.
+  CORD:  {pts:[[0.55,-11.3,-2.10],[0.55,-9.95,-1.95],[0.55,-8.60,-1.75]],n:8, cortex:0},
+  ARM:   {pts:[[6.10,-11.5,2.10],[4.60,-11.6,0.60],[2.60,-11.5,-1.20]],  n:7, cortex:0}
+};
+const MIDLINE = {
+  CHIASM:{c:[0,-3.55,4.95], s:[0.42,0.16,0.20], n:3},
+  BSTM:  {c:[0,-4.60,-0.55],s:[0.45,1.90,0.45], n:8}
+};
+const ORGANS = {
+  RETINA: {c:[3.05,-3.20,9.55], s:[0.42,0.42,0.16], n:7},
+  COCHLEA:{c:[7.15,-3.30,0.30], s:[0.20,0.30,0.30], n:5},
+  HAND:   {c:[7.10,-11.4,2.60], s:[0.55,0.30,0.55], n:7}
+};
+
+const nodes=[]; // {x,y,z, reg, side, chainIdx}
+const regIndex={};
+function addNode(x,y,z,reg,side,ci){
+  const i=nodes.length;
+  nodes.push({x,y,z,reg,side,ci:ci===undefined?-1:ci});
+  (regIndex[reg+side]=regIndex[reg+side]||[]).push(i);
+  return i;
+}
+function jitter(c,s){return [c[0]+(rnd()*2-1)*s[0], c[1]+(rnd()*2-1)*s[1], c[2]+(rnd()*2-1)*s[2]];}
+
+function buildGraph(){
+  const p={x:0,y:0,z:0};
+  for(const side of [1,-1]){
+    for(const key in REGIONS){
+      const R=REGIONS[key];
+      for(let i=0;i<R.n;i++){
+        let q=jitter(R.c,R.s);
+        p.x=q[0];p.y=q[1];p.z=q[2];
+        if(R.cortex){ project(p,-0.62,4); }              // seat inside the sheet
+        else if(fBase(p.x,p.y,p.z)>-0.15){ project(p,-0.55,3); }
+        const w=warp({x:p.x*side,y:p.y,z:p.z});
+        addNode(w.x,w.y,w.z,key,side);
+      }
+    }
+    for(const key in CHAINS){
+      const C=CHAINS[key];
+      for(let i=0;i<C.n;i++){
+        const t=C.n===1?0:i/(C.n-1);
+        const a=C.pts, seg=t*(a.length-1), k=Math.min(a.length-2,Math.floor(seg)), ft=seg-k;
+        const x=lerp(a[k][0],a[k+1][0],ft), y=lerp(a[k][1],a[k+1][1],ft), z=lerp(a[k][2],a[k+1][2],ft);
+        const w=warp({x:(x+(rnd()-0.5)*0.14)*side, y:y+(rnd()-0.5)*0.14, z:z+(rnd()-0.5)*0.14});
+        addNode(w.x,w.y,w.z,key,side,i);
+      }
+    }
+    for(const key in ORGANS){
+      const O=ORGANS[key];
+      for(let i=0;i<O.n;i++){
+        const q=jitter(O.c,O.s);
+        const w=warp({x:q[0]*side,y:q[1],z:q[2]});
+        addNode(w.x,w.y,w.z,key,side);
+      }
+    }
+  }
+  for(const key in MIDLINE){
+    const M=MIDLINE[key];
+    for(let i=0;i<M.n;i++){
+      const q=jitter(M.c,M.s);
+      const w=warp({x:q[0],y:q[1],z:q[2]});
+      addNode(w.x,w.y,w.z,key,1,i);
+    }
+  }
+}
+
+/* ---- edges ---------------------------------------------------- */
+const edges=[]; // {a,b,w,len,tt,cls}
+const SPEED={afferent:11.5, chain:12.5, cortico:6.2, local:4.2, callosal:5.4, thalamo:8.5};
+function dist(a,b){const A=nodes[a],B=nodes[b];return Math.hypot(A.x-B.x,A.y-B.y,A.z-B.z);}
+const edgeSeen=new Set();
+function link(a,b,w,cls){
+  if(a===b) return;
+  const k=a<b?a+"_"+b:b+"_"+a;
+  if(edgeSeen.has(k)) return;
+  edgeSeen.add(k);
+  const len=dist(a,b);
+  edges.push({a,b,w,len,tt:Math.max(0.035,len/SPEED[cls]),cls,p:[]});
+}
+const MIDLINE_REGS=new Set(Object.keys(MIDLINE));
+// Midline structures exist once, on side 1, but project to BOTH hemispheres.
+// Without this the left half of the brain was unreachable from the brainstem.
+function ids(reg,side){
+  if(MIDLINE_REGS.has(reg)) return regIndex[reg+1]||[];
+  return regIndex[reg+side]||[];
+}
+function connect(rA,rB,side,w,cls,dens){
+  const A=ids(rA,side), B=ids(rB,side);
+  if(!A.length||!B.length) return;
+  const count=Math.round(Math.max(A.length,B.length)*(dens||1.0));
+  for(let i=0;i<count;i++){
+    const a=A[(rnd()*A.length)|0];
+    // prefer the nearest few targets so tracts look like bundles, not spaghetti
+    let best=-1,bd=1e9;
+    for(let k=0;k<4;k++){
+      const c=B[(rnd()*B.length)|0], d=dist(a,c);
+      if(d<bd){bd=d;best=c;}
+    }
+    link(a,best,w,cls);
+  }
+}
+// Relay chains must be entered at their far end and left at their brain end,
+// or a pulse can short-circuit half the pathway.
+const RELAY=new Set(["ONERV","OTRACT","ORAD","ALEM","CORD","ARM"]);
+function chainEnds(reg,side,end,k){
+  const A=ids(reg,side).slice().sort((x,y)=>nodes[x].ci-nodes[y].ci);
+  if(!A.length) return [];
+  return end==="in"?A.slice(0,k):A.slice(-k);
+}
+function junction(rA,rB,side,w,cls){
+  const A=RELAY.has(rA)?chainEnds(rA,side,"out",2):ids(rA,side);
+  const B=RELAY.has(rB)?chainEnds(rB,side,"in",2):ids(rB,side);
+  if(!A.length||!B.length) return;
+  for(const a of A) for(const b of B) link(a,b,w,cls);
+}
+function chainLink(reg,side,w,cls){
+  const A=ids(reg,side).slice().sort((x,y)=>nodes[x].ci-nodes[y].ci);
+  for(let i=0;i<A.length-1;i++) link(A[i],A[i+1],w,cls);
+}
+function intra(reg,side,k,w){
+  const A=ids(reg,side);
+  for(let i=0;i<A.length;i++){
+    const scored=[];
+    for(let j=0;j<A.length;j++) if(i!==j) scored.push([dist(A[i],A[j]),A[j]]);
+    scored.sort((m,n)=>m[0]-n[0]);
+    for(let q=0;q<Math.min(k,scored.length);q++) link(A[i],scored[q][1],w,"local");
+  }
+}
+
+const TRACTS=[
+  // --- visual afferent: retina → chiasm → LGN → radiation → V1
+  ["RETINA","ONERV",0.95,"afferent",1.2],
+  ["ONERV","CHIASM",0.95,"afferent",1.0],   // handled specially for crossing
+  ["CHIASM","OTRACT",0.95,"afferent",1.0],
+  ["OTRACT","LGN",0.90,"afferent",1.2],
+  ["LGN","ORAD",0.90,"afferent",1.2],
+  ["ORAD","V1",0.80,"afferent",1.4],
+  // --- visual cortical hierarchy, both directions (feedback matters)
+  ["V1","V2",0.42,"cortico",1.6],["V2","V1",0.42,"cortico",1.4],
+  ["V2","V4",0.38,"cortico",1.3],["V4","V2",0.40,"cortico",1.3],
+  ["V4","IT",0.44,"cortico",1.5],["IT","V4",0.40,"cortico",1.3],
+  ["V2","MT",0.36,"cortico",1.1],["MT","PAR",0.36,"cortico",1.2],
+  ["PAR","MT",0.20,"cortico",0.7],["PAR","PCC",0.26,"cortico",0.9],
+  // --- auditory afferent
+  ["COCHLEA","CN",0.95,"afferent",1.2],["CN","SOC",0.92,"afferent",1.0],
+  ["SOC","IC",0.90,"afferent",1.0],["IC","MGN",0.88,"afferent",1.0],
+  ["MGN","A1",0.82,"afferent",1.3],["A1","AUD",0.42,"cortico",1.3],
+  ["AUD","IT",0.28,"cortico",0.9],["AUD","PAR",0.24,"cortico",0.8],
+  ["AUD","PFC",0.38,"cortico",1.3],["A1","INS",0.20,"cortico",0.6],
+  // --- somatosensory afferent (dorsal column / medial lemniscus)
+  ["HAND","ARM",0.95,"afferent",1.2],["ARM","CORD",0.95,"afferent",1.0],
+  ["CORD","DCN",0.92,"afferent",1.0],["DCN","ALEM",0.90,"afferent",1.0],
+  ["ALEM","VPL",0.88,"afferent",1.1],["VPL","S1",0.82,"afferent",1.4],
+  ["S1","PAR",0.38,"cortico",1.2],["S1","M1",0.30,"cortico",1.0],
+  ["S1","INS",0.28,"cortico",0.9],
+  // --- interoceptive / affective
+  ["INS","ACC",0.32,"cortico",1.1],["ACC","PFC",0.30,"cortico",1.1],
+  ["AMY","OFC",0.30,"cortico",1.0],["AMY","INS",0.28,"cortico",0.9],
+  ["AMY","ACC",0.26,"cortico",0.8],
+  // --- association + memory
+  ["IT","HIPP",0.30,"cortico",1.0],["HIPP","PFC",0.40,"cortico",1.2],
+  ["PFC","IT",0.38,"cortico",1.2],["PFC","PAR",0.34,"cortico",1.1],
+  ["PAR","HIPP",0.20,"cortico",0.7],
+  ["IT","PFC",0.28,"cortico",1.1],["PAR","PFC",0.30,"cortico",1.1],
+  ["PFC","OFC",0.26,"cortico",0.9],["PFC","M1",0.24,"cortico",0.9],
+  ["PFC","ACC",0.26,"cortico",0.9],
+  // --- thalamocortical loops: what lets a pattern sustain itself
+  ["THAL","V1",0.30,"thalamo",0.9],["V1","THAL",0.22,"thalamo",0.7],
+  ["THAL","PAR",0.28,"thalamo",0.9],["PAR","THAL",0.22,"thalamo",0.7],
+  ["THAL","PFC",0.30,"thalamo",0.9],["PFC","THAL",0.24,"thalamo",0.8],
+  ["THAL","A1",0.24,"thalamo",0.7],["THAL","S1",0.24,"thalamo",0.7],
+  ["THAL","PCC",0.34,"thalamo",1.1],["PCC","ACC",0.28,"cortico",0.9],
+  ["LGN","THAL",0.24,"thalamo",0.6],["MGN","THAL",0.24,"thalamo",0.6],
+  ["VPL","THAL",0.24,"thalamo",0.6],
+  // --- the thalamic "low road" to the amygdala, and ascending modulation
+  ["THAL","AMY",0.24,"thalamo",0.9],["BSTM","AMY",0.20,"thalamo",0.7],
+  ["AMY","HIPP",0.26,"cortico",0.8],
+  // --- spinothalamic: the affective limb of body sensation, separate from
+  //     the lemniscal route that carries touch to S1
+  ["VPL","INS",0.40,"thalamo",1.2],["VPL","ACC",0.34,"thalamo",1.0],
+  ["ALEM","INS",0.30,"afferent",0.8],
+  // --- hippocampal output, so a reactivated trace can spread into cortex
+  ["HIPP","IT",0.44,"cortico",1.3],["HIPP","PCC",0.42,"cortico",1.2],
+  ["HIPP","V4",0.32,"cortico",0.9],
+  // --- cerebellar loop
+  ["M1","BSTM",0.20,"cortico",0.7],["BSTM","CBM",0.30,"cortico",0.9],
+  ["CBM","BSTM",0.24,"cortico",0.7],["BSTM","THAL",0.24,"thalamo",0.7]
+];
+const CALLOSAL=["V1","V2","PAR","PFC","IT","S1","M1","ACC","A1","PCC"];
+
+function buildEdges(){
+  for(const side of [1,-1]){
+    for(const key in REGIONS) if(REGIONS[key].n>4) intra(key,side,3,0.16);
+    intra("HIPP",side,2,0.20); intra("CBM",side,3,0.14);
+    for(const key in CHAINS) chainLink(key,side,0.95,"chain");
+    chainLink("BSTM",1,0.6,"chain");
+    for(const t of TRACTS){
+      if(t[0]==="ONERV"||t[0]==="CHIASM") continue;
+      if(RELAY.has(t[0])||RELAY.has(t[1])) junction(t[0],t[1],side,t[2],t[3]);
+      else connect(t[0],t[1],side,t[2],t[3],t[4]);
+    }
+  }
+  // optic chiasm: nasal fibres cross, so each eye reaches both hemispheres
+  for(const side of [1,-1]) junction("ONERV","CHIASM",side,0.95,"afferent");
+  {
+    const ch=ids("CHIASM",1);
+    for(const s2 of [1,-1]){
+      const tr=chainEnds("OTRACT",s2,"in",2);
+      for(let i=0;i<tr.length;i++) link(ch[i%ch.length],tr[i],0.88,"afferent");
+    }
+  }
+  // decussations: the touch pathway crosses the midline in the medulla,
+  // the auditory pathway crosses at the superior olive.
+  for(const side of [1,-1]){
+    junction("DCN","ALEM",side,0.55,"afferent");
+    const A=ids("DCN",side), B=chainEnds("ALEM",-side,"in",2);
+    for(let i=0;i<A.length;i++) link(A[i],B[i%B.length],0.90,"afferent");
+    const C=ids("CN",side), D=ids("SOC",-side);
+    for(let i=0;i<C.length;i++) link(C[i],D[i%D.length],0.90,"afferent");
+  }
+  // corpus callosum
+  for(const key of CALLOSAL){
+    const L=ids(key,1), R=ids(key,-1);
+    const m=Math.min(L.length,R.length);
+    for(let i=0;i<m;i+=1) if(rnd()<0.55) link(L[i],R[i],0.22,"callosal");
+  }
+}
+
+/* ============================================================
+   STAGE 4 — ACTIVITY ENGINE
+   Integrate-and-fire units, axonal delays, refractory periods,
+   recurrent loops, stochastic drift, decay to baseline.
+   ============================================================ */
+let N=0;
+let pot,act,refr,exc,tint;
+const NODE_BASE=[0.62,0.74,0.94];
+
+const STIM={
+  LIGHT:{col:[0.44,0.91,1.00], entry:["RETINA"], gain:{V1:1.9,V2:1.7,V4:1.6,MT:1.5,IT:1.8,PAR:1.5,THAL:1.2},
+    stages:[[0,"Photons at the retina"],[0.5,"Sensory transduction"],[1.0,"Optic nerve · chiasm"],
+            [1.7,"Optic radiation"],[2.5,"Primary visual cortex"],[4.0,"Dorsal and ventral streams"],
+            [6.0,"Distributed cortical activity"],[9.0,"Reorganising"],[12.0,"Decay toward baseline"]]},
+  SOUND:{col:[0.72,0.55,1.00], entry:["COCHLEA"], gain:{A1:1.9,AUD:1.8,IT:1.3,PAR:1.25,THAL:1.2,PFC:1.55},
+    stages:[[0,"Pressure wave at the cochlea"],[0.5,"Hair-cell transduction"],[1.0,"Cochlear nucleus · olive"],
+            [1.6,"Inferior colliculus"],[2.3,"Auditory cortex"],[3.8,"Auditory association"],
+            [6.0,"Distributed cortical activity"],[9.0,"Reorganising"],[12.0,"Decay toward baseline"]]},
+  TOUCH:{col:[0.36,0.90,0.69], entry:["HAND"], gain:{S1:2.3,PAR:2.0,M1:1.45,INS:0.35,ACC:0.40,AMY:0.5,THAL:1.2},
+    stages:[[0,"Mechanoreceptors in the skin"],[0.6,"Peripheral nerve"],[1.3,"Ascending dorsal column"],
+            [2.0,"Decussation in the medulla"],[2.8,"Somatosensory cortex"],[4.2,"Parietal integration"],
+            [6.0,"Distributed cortical activity"],[9.0,"Reorganising"],[12.0,"Decay toward baseline"]]},
+
+  /* ---------- ROW II · EXPERIENCES ----------
+     Each of these starts somewhere specific and TRAVELS. Nothing is seeded
+     at its destination: a phase raises the gain of the next stage so the
+     arriving wave can ignite it, and the wave has to get there on real
+     tracts, at real conduction speed. */
+
+  FEAR:{col:[1.00,0.30,0.37], internal:1, origin:["THAL","BSTM"], riseT:0.22,
+    arousPeak:1.05, noiseMul:1.6, dur:18,
+    gain:{THAL:1.3},
+    sustain:{regs:["THAL","AMY"],rate:7,amp:0.80,frac:0.28,to:6.5},
+    phases:[{t:0.0,seed:["THAL","BSTM"],amp:1.05,n:0.95},
+            {t:0.5,gain:{AMY:2.1,BSTM:1.5}},
+            {t:1.4,gain:{INS:1.9,ACC:1.7}},
+            {t:2.6,gain:{S1:1.3,M1:1.4}},
+            {t:4.0,gain:{PFC:1.9,OFC:1.5}},
+            {t:7.0,gain:{AMY:0.6,INS:0.9,PFC:1.6}}],
+    stages:[[0,"Thalamic alarm — the fast route"],[0.6,"Amygdala engaged"],
+            [1.6,"Insula and cingulate recruited"],[2.8,"Motor readiness"],
+            [4.2,"Prefrontal regulation arrives"],[7.2,"Damping the alarm"],
+            [11.0,"Decay toward baseline"]]},
+
+  PAIN:{col:[1.00,0.24,0.56], entry:["HAND"], slow:1, riseT:0.35,
+    arousPeak:0.95, noiseMul:1.2, dur:19,
+    gain:{VPL:1.4,S1:0.75,PAR:0.7,INS:1.5,ACC:1.4},
+    sustain:{regs:["VPL"],rate:6,amp:0.80,frac:0.40,from:1.6,to:8.0},
+    phases:[{t:1.4,gain:{VPL:1.7,S1:0.85}},
+            {t:2.4,gain:{INS:2.4,ACC:2.3,S1:0.7}},
+            {t:4.2,gain:{AMY:1.5,PFC:1.4}},
+            {t:6.5,gain:{INS:1.6,ACC:1.6}}],
+    stages:[[0,"Nociceptors in the skin"],[0.8,"Slow afferent fibres"],
+            [1.8,"Spinothalamic ascent"],[2.6,"Thalamic relay"],
+            [3.4,"Insula and cingulate — the affective limb"],
+            [5.0,"Distributed, poorly localised"],[8.0,"Slow decay"],
+            [12.5,"Decay toward baseline"]]},
+
+  CALM:{col:[0.42,0.86,0.92], internal:1, origin:["BSTM"], riseT:2.2,
+    arousPeak:-0.30, noiseMul:0.45, dur:21,
+    gain:{BSTM:1.2},
+    sustain:{regs:["BSTM","THAL"],rate:6,amp:0.85,frac:0.40,to:15.0},
+    phases:[{t:0.0,seed:["BSTM"],amp:0.95,n:0.9},
+            {t:1.4,gain:{THAL:1.6}},
+            {t:2.4,gain:{PCC:2.0,ACC:1.6}},
+            {t:4.2,gain:{PFC:1.5,PAR:1.3,PCC:1.7}},
+            {t:8.0,gain:{PCC:1.4,THAL:1.3}}],
+    stages:[[0,"Ascending brainstem modulation"],[1.6,"Thalamic gating"],
+            [3.2,"Default-mode cortex engages"],[5.2,"Cortical noise falls away"],
+            [8.2,"Slow coherent waves, low arousal"],[13.0,"Settling"]]},
+
+  /* ---------- ROW III · THOUGHT ----------
+     Four different dynamics: reactivation, top-down generation,
+     anticipation meeting input, and competition. */
+
+  REMEMBER:{col:[0.42,0.60,1.00], internal:1, origin:["HIPP"], engram:1,
+    riseT:0.7, arousPeak:0.85, dur:19,
+    gain:{HIPP:1.8},
+    sustain:{regs:["HIPP"],rate:7,amp:0.85,frac:0.35,to:10.0},
+    phases:[{t:0.0,seed:["HIPP"],amp:1.05,n:0.95},
+            {t:1.0,engramGain:2.0},
+            {t:2.2,seed:["HIPP"],amp:0.70,n:0.5},
+            {t:3.6,engramGain:1.7},
+            {t:5.4,gain:{PFC:1.5,PCC:1.4}},
+            {t:7.0,engramGain:1.3}],
+    stages:[[0,"Hippocampal cue"],[1.1,"Partial activation"],
+            [2.3,"Pattern completion spreads into cortex"],
+            [3.8,"Associations reactivate"],
+            [5.6,"Reconstruction meets current activity"],
+            [7.2,"Trace re-consolidates"],[12.0,"Decay toward baseline"]]},
+
+  IMAGINE:{col:[0.68,0.36,1.00], internal:1, origin:["PFC"], riseT:1.0,
+    arousPeak:0.90, dur:20,
+    gain:{PFC:1.6},
+    sustain:[{regs:["PFC"],rate:8,amp:0.85,frac:0.34,to:13.0},
+             {regs:["IT"],rate:6,amp:0.80,frac:0.30,from:3.0,to:12.0}],
+    phases:[{t:0.0,seed:["PFC"],amp:1.05,n:0.9},
+            {t:1.2,gain:{HIPP:1.7,ACC:1.3}},
+            {t:2.4,gain:{IT:2.0}},
+            {t:3.4,gain:{V4:2.2,IT:1.6}},
+            {t:4.6,gain:{V2:2.3,V4:1.7}},
+            {t:5.8,gain:{V1:2.9,V2:1.9}},
+            {t:8.4,gain:{V1:1.8,V2:1.5,IT:1.5}}],
+    stages:[[0,"Internally generated — no sensory input"],
+            [1.4,"Prefrontal and hippocampal seeding"],
+            [2.6,"Descending into association cortex"],
+            [4.0,"Down the ventral stream"],
+            [5.4,"Early visual areas"],
+            [6.8,"V1 active with nothing in front of the eyes"],
+            [9.0,"Constructed pattern held"],[13.0,"Decay toward baseline"]]},
+
+  PREDICT:{col:[1.00,0.78,0.30], internal:1, origin:["PFC"], riseT:0.9,
+    arousPeak:1.00, dur:22,
+    gain:{PFC:1.5},
+    sustain:{regs:["PFC"],rate:7,amp:0.80,frac:0.30,to:7.0},
+    phases:[{t:0.0,seed:["PFC","PAR"],amp:1.00,n:0.85},
+            {t:1.0,gain:{IT:1.7,V4:1.7}},
+            {t:2.2,gain:{V2:1.8,V1:1.8}},
+            {t:3.4,gain:{V1:1.5,V2:1.5}},
+            {t:4.6,organ:["RETINA"],amp:1.05},
+            {t:7.0,gain:{V1:0.55,V2:0.60,MT:2.2,PAR:2.0,ACC:1.8}},
+            {t:9.0,gain:{V1:1.1,V2:1.1,MT:1.2,PAR:1.3,ACC:1.2,PFC:1.6}}],
+    stages:[[0,"Prefrontal expectation forms"],
+            [1.2,"Prediction descends the hierarchy"],
+            [2.4,"Visual cortex pre-activated"],[3.6,"Waiting"],
+            [4.7,"Input arrives at the retina"],
+            [6.2,"Ascending signal meets the prediction"],
+            [7.2,"Predicted features damped · error bursts elsewhere"],
+            [9.2,"Model updates"],[13.0,"Decay toward baseline"]]},
+
+  DECIDE:{col:[0.90,0.92,1.00], internal:1, origin:["PFC","OFC"], riseT:0.6,
+    arousPeak:1.00, dur:21,
+    compete:[["PFC","PAR","M1"],["OFC","ACC","INS"]],
+    gain:{PFC:1.3,OFC:1.3},
+    sustain:{regs:["PFC","OFC"],rate:8,amp:0.80,frac:0.28,to:11.0},
+    phases:[{t:0.0,seed:["PFC","OFC"],amp:1.00,n:0.85},
+            {t:1.2,gain:{PAR:1.5,ACC:1.5}},
+            {t:2.4,gain:{M1:1.4,INS:1.4}},
+            {t:4.0,seed:["PFC","OFC"],amp:0.60,n:0.35},
+            {t:6.5,gain:{THAL:1.5}}],
+    stages:[[0,"Two coalitions form"],[1.4,"Both patterns recruit support"],
+            [3.0,"Mutual inhibition"],[5.0,"One coalition pulls ahead"],
+            [7.5,"The loser collapses"],[10.0,"Commitment"],
+            [14.0,"Decay toward baseline"]]}
+};
+// Excitation/inhibition balance. Real cortex holds activity sparse with
+// inhibitory feedback; without it any excitation spreads until everything
+// fires, which is exactly what the audit measured.
+const SIM={
+  branch:   1.10,   // total diverging charge one spike may deliver
+  globalInh:3.00,   // divisive normalisation by whole-network activity
+  localInh: 3.50,   // divisive normalisation within the firing population
+  thresh:   0.55,
+  spont:    0.15,   // spontaneous firing rate per unit per second at rest
+  relayGain:1.00,
+  relayBranch:1.9  // first-order relay neurons are drivers, not modulators
+};
+// Labelled lines — a relay nucleus or tract is not a cortical population with
+// its own interneuron pool, so it does not divisively inhibit itself.
+const LABELLED=new Set(["RETINA","COCHLEA","HAND","ONERV","OTRACT","ORAD","CHIASM",
+  "ARM","CORD","ALEM","CN","SOC","IC","DCN","LGN","MGN","VPL"]);
+let regAct={}, netAct=0;
+const trace={};                    // residual regional excitability
+let arousal=1, stimCol=[0.44,0.91,1.00], washAmt=0;
+// Each entry is a latched program running on its own clock. Any combination
+// can drive the network at once, and each loops until it is switched off.
+const actv=new Map();   // key -> {S,t,phase,comp,engr,dyn,gain}
+let gainAll={};         // regional gains of every running program, combined
+let NOISE_MUL=1;
+let firingCount=0, waveClock=0;
+
+// --- program state (rows II and III) ---
+let lastEngram=null, lastEngramKey=null;   // the pattern REMEMBER replays
+
+function initSim(){
+  N=nodes.length;
+  pot=new Float32Array(N); act=new Float32Array(N);
+  refr=new Float32Array(N); exc=new Float32Array(N).fill(1);
+  tint=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ tint[i*3]=NODE_BASE[0];tint[i*3+1]=NODE_BASE[1];tint[i*3+2]=NODE_BASE[2]; }
+  // Outgoing adjacency. Afferent relays are ONE-WAY: a sensory pathway
+  // carries signal toward the brain, and letting cortex drive it backwards
+  // was both wrong and the reason the pathway animation read as a smear.
+  for(let e=0;e<edges.length;e++){
+    const E=edges[e];
+    const oneWay=(E.cls==="afferent"||E.cls==="chain");
+    (nodes[E.a].out=nodes[E.a].out||[]).push([e,1,E.w]);
+    if(!oneWay) (nodes[E.b].out=nodes[E.b].out||[]).push([e,-1,E.w]);
+  }
+  // Branching control. A spike used to deliver ~2.4 total charge against a
+  // 0.62 threshold, so each spike caused several more and the whole network
+  // ignited every time. Cap the diverging (non-relay) budget per unit so
+  // cortical populations need genuine convergence to fire.
+  for(let i=0;i<N;i++){
+    const out=nodes[i].out; if(!out) continue;
+    let tract=0, local=0;
+    for(const o of out){
+      const E=edges[o[0]];
+      if(E.cls==="chain"||E.cls==="afferent") continue;
+      if(E.cls==="local") local+=E.w; else tract+=E.w;
+    }
+    // Long-range projections must out-drive diffuse local recurrence, or a
+    // wave dissipates into the population it lands in and never travels on.
+    const tShare=(tract>0&&local>0)?0.76:1.0, lShare=(tract>0&&local>0)?0.24:1.0;
+    // Relay nuclei drive their targets rather than modulating them, so they
+    // get a much larger outgoing budget than a cortical unit.
+    const budget=SIM.branch*(LABELLED.has(nodes[i].reg)?SIM.relayBranch:1);
+    const ts=tract>0?budget*tShare/tract:0;
+    const ls=local>0?budget*lShare/local:0;
+    for(const o of out){
+      const E=edges[o[0]];
+      o[2]=(E.cls==="chain"||E.cls==="afferent")?E.w
+          :(E.cls==="local"?E.w*ls:E.w*ts);
+    }
+  }
+}
+
+function fire(i,amp,col){
+  act[i]=Math.min(1.35,act[i]+1.0);
+  refr[i]=0.10+rnd()*0.09;
+  pot[i]=-0.32;
+  if(col){ tint[i*3]=col[0]; tint[i*3+1]=col[1]; tint[i*3+2]=col[2]; }
+  const out=nodes[i].out;
+  if(!out) return;
+  for(let k=0;k<out.length;k++){
+    const E=edges[out[k][0]];
+    if(E.p.length>3) continue;
+    E.p.push({t:out[k][1]>0?0:1, d:out[k][1], a:amp*out[k][2], c:col||null});
+  }
+}
+
+function stepSim(dt){
+  waveClock+=dt;
+  const decay=Math.exp(-dt/0.30), vdecay=Math.exp(-dt/0.20);
+  // --- pulses in flight ---
+  for(let e=0;e<edges.length;e++){
+    const E=edges[e], P=E.p;
+    for(let k=P.length-1;k>=0;k--){
+      const p=P[k];
+      p.t+=(dt/E.tt)*p.d;
+      if(p.t>=1||p.t<=0){
+        const tgt=p.d>0?E.b:E.a;
+        const tr=nodes[tgt].reg;
+        const lab=LABELLED.has(tr);
+        const inh=lab?1:(1+SIM.globalInh*netAct+SIM.localInh*(regAct[tr]||0));
+        pot[tgt]+=p.a*arousalGain(tgt)*(lab?SIM.relayGain:1)/inh;
+        if(p.c && p.a>0.06){
+          tint[tgt*3]=lerp(tint[tgt*3],p.c[0],0.55);
+          tint[tgt*3+1]=lerp(tint[tgt*3+1],p.c[1],0.55);
+          tint[tgt*3+2]=lerp(tint[tgt*3+2],p.c[2],0.55);
+        }
+        P.splice(k,1);
+      }
+    }
+  }
+  // --- units ---
+  const noiseScale=(REDUCED?0.6:1)*NOISE_MUL;
+  const noiseAmp=0.045*noiseScale;
+  firingCount=0;
+  for(let i=0;i<N;i++){
+    act[i]*=vdecay;
+    if(act[i]>0.05) firingCount++;
+    pot[i]*=decay;
+    // resting state: drifting slow wave + stochastic drive
+    const nd=nodes[i];
+    const wave=Math.sin(waveClock*0.55 + nd.z*0.20 - nd.y*0.12)*0.5+0.5;
+    pot[i]+=(rnd()-0.42)*noiseAmp*(0.45+0.85*wave);
+    if(refr[i]>0){ refr[i]-=dt; continue; }
+    // The sculpture is never off: sparse spontaneous spiking, denser on the
+    // crest of a slow wave drifting across the cortex.
+    if(!LABELLED.has(nd.reg) && rnd()<SIM.spont*dt*(0.20+1.7*wave)*noiseScale){
+      fire(i,0.52,null); continue;
+    }
+    if(pot[i]>SIM.thresh){
+      const c=(tint[i*3]!==NODE_BASE[0])?[tint[i*3],tint[i*3+1],tint[i*3+2]]:null;
+      fire(i,0.62,c);
+    }
+  }
+  // regional and global activity drive the inhibition above
+  netAct=firingCount/N;
+  const acc={},cnt={};
+  for(let i=0;i<N;i++){const r=nodes[i].reg;acc[r]=(acc[r]||0)+act[i];cnt[r]=(cnt[r]||0)+1;}
+  regAct={};
+  for(const r in acc) regAct[r]=acc[r]/cnt[r];
+
+  // tint relaxes back toward the resting blue-white
+  const tr=1-Math.exp(-dt/2.6);
+  for(let i=0;i<N;i++){
+    if(act[i]<0.25){
+      tint[i*3]=lerp(tint[i*3],NODE_BASE[0],tr);
+      tint[i*3+1]=lerp(tint[i*3+1],NODE_BASE[1],tr);
+      tint[i*3+2]=lerp(tint[i*3+2],NODE_BASE[2],tr);
+    }
+  }
+  // --- concurrent program clocks, arousal and residual traces ---
+  gainAll={};
+  let arousalSum=0, washTarget=0, noiseMul=1;
+  for(const st of actv.values()){
+    const S=st.S, dur=S.dur||17;
+    st.t+=dt;
+    if(st.t>dur){                       // loop rather than stop
+      st.t=0; st.phase=0; st.gain={}; st.dyn=null; st.engr=false;
+      st.comp=(rnd()-0.5)*0.12;
+      if(S.entry) for(const org of S.entry) for(const side of [1,-1])
+        for(const i of ids(org,side)) fire(i,1.05,S.col);
+    }
+    const rise=smoothstep(0,S.riseT||0.8,st.t);
+    const fall=1-smoothstep(dur*0.44,dur*0.88,st.t);
+    const peak=(S.arousPeak!==undefined)?S.arousPeak:0.85;
+    arousalSum+=peak*rise*fall;
+    if(0.55*rise*fall>washTarget) washTarget=0.55*rise*fall;
+    if(S.noiseMul!==undefined) noiseMul*=S.noiseMul;
+
+    // sensory stimuli keep driving their entry organ — a stimulus has duration
+    if(S.entry && st.t<(S.slow?1.4:0.75)){
+      for(const org of S.entry) for(const side of [1,-1])
+        for(const i of ids(org,side)) if(rnd()<0.34) fire(i,0.95,S.col);
+    }
+
+    // Sustained drive. A single volley dissipates before it crosses cortex;
+    // top-down generation, recall and deliberation all involve activity that
+    // is HELD, not pulsed once. This is what lets a wave actually travel.
+    if(S.sustain){
+      const list=Array.isArray(S.sustain)?S.sustain:[S.sustain];
+      for(const u of list){
+        if(st.t>=(u.from||0) && st.t<=(u.to!==undefined?u.to:dur) &&
+           rnd()<u.rate*dt) seedRegions(u.regs,u.amp,u.frac,S.col);
+      }
+    }
+
+    // scheduled phases
+    while(S.phases && st.phase<S.phases.length && st.t>=S.phases[st.phase].t){
+      const ph=S.phases[st.phase++];
+      if(ph.gain) for(const k in ph.gain) st.gain[k]=ph.gain[k];
+      if(ph.seed) seedRegions(ph.seed,ph.amp,ph.n,S.col);
+      if(ph.organ) for(const org of ph.organ) for(const side of [1,-1])
+        for(const i of ids(org,side)) fire(i,ph.amp,S.col);
+      if(ph.engramGain) applyEngramGain(ph.engramGain,st);
+    }
+
+    // DECIDE — two coalitions, mutual inhibition, one wins
+    if(S.compete && st.t>0.6){
+      const x=meanAct(S.compete[0]), y=meanAct(S.compete[1]);
+      st.comp=clamp(st.comp+((x-y)*2.6+(rnd()-0.5)*0.55)*dt,-1,1);
+      const g=st.comp*1.45;
+      for(const r of S.compete[0]) st.gain[r]=clamp(1.30+g,0.12,2.7);
+      for(const r of S.compete[1]) st.gain[r]=clamp(1.30-g,0.12,2.7);
+      if(Math.abs(st.comp)>0.45 && st.t>4.0)
+        st.dyn=(st.comp>0?"Coalition A":"Coalition B")+" dominant · "+
+               Math.round(Math.abs(st.comp)*100)+"%";
+    }
+
+    // capture what a sensory event looked like, so REMEMBER has something to replay
+    if(!S.internal && !st.engr && st.t>4.5){
+      st.engr=true;
+      const acc={},cnt={};
+      for(let i=0;i<N;i++){
+        const r=nodes[i].reg;
+        if(NON_ENGRAM.has(r)) continue;   // organs and relays are not memories
+        acc[r]=(acc[r]||0)+act[i]; cnt[r]=(cnt[r]||0)+1;
+      }
+      const snap={}; let mx=0;
+      for(const r in acc){const v=acc[r]/cnt[r]; if(v>0.03){snap[r]=v; if(v>mx)mx=v;}}
+      if(mx>0){ for(const r in snap) snap[r]/=mx; lastEngram=snap; lastEngramKey=st.key; }
+    }
+
+    if(S.gain) for(const k in S.gain) gainAll[k]=(gainAll[k]||1)*S.gain[k];
+    for(const k in st.gain) gainAll[k]=(gainAll[k]||1)*st.gain[k];
+  }
+  NOISE_MUL=noiseMul;
+  if(actv.size){
+    arousal=clamp(1+arousalSum,0.30,3.2);
+    washAmt=lerp(washAmt,washTarget,1-Math.exp(-dt/0.5));
+  }else{
+    arousal=lerp(arousal,1,1-Math.exp(-dt/2.0));
+    washAmt=lerp(washAmt,0,1-Math.exp(-dt/1.6));
+  }
+  const td=Math.exp(-dt/45);
+  for(const k in trace){ trace[k]*=td; if(trace[k]<0.01) delete trace[k]; }
+}
+
+function arousalGain(i){
+  const r=nodes[i].reg;
+  let g=arousal;
+  if(gainAll[r]) g*=gainAll[r];
+  if(trace[r]) g*=1+trace[r]*0.55;
+  return g;
+}
+const NON_ENGRAM=new Set(["RETINA","COCHLEA","HAND","ONERV","OTRACT","ORAD",
+  "CHIASM","ARM","CORD","ALEM","CN","SOC","IC","DCN","BSTM","LGN","MGN","VPL"]);
+function meanAct(list){
+  let s=0,n=0;
+  for(const r of list) for(const side of [1,-1])
+    for(const i of ids(r,side)){ s+=act[i]; n++; }
+  return n?s/n:0;
+}
+function seedRegions(list,amp,frac,col){
+  for(const r of list) for(const side of [1,-1])
+    for(const i of ids(r,side)) if(rnd()<frac) fire(i,amp,col);
+}
+// Bias the cortex toward the pattern a previous sensory event left behind.
+// This does NOT light those regions: it lowers their threshold so the wave
+// spreading out of the hippocampus can ignite them. Pattern completion has
+// to actually travel.
+function applyEngramGain(strength,st){
+  const src=(lastEngram&&Object.keys(lastEngram).length)?lastEngram:null;
+  if(!src){
+    st.dyn="No prior trace — press a sensation first";
+    st.gain.IT=1.5; st.gain.PCC=1.5;
+    return;
+  }
+  for(const r in src){
+    const w=clamp(src[r],0,1);
+    if(w<0.08) continue;
+    st.gain[r]=1+(strength-1)*w;
+  }
+}
+
+function toggleStim(key){
+  const S=STIM[key];
+  if(!S) return;
+  const btn=els[key];
+  if(actv.has(key)){
+    actv.delete(key);
+    if(btn){ btn.classList.remove("armed"); btn.setAttribute("aria-pressed","false"); }
+    const rest=[...actv.keys()];
+    if(rest.length) stimCol=STIM[rest[rest.length-1]].col;
+    return;
+  }
+  actv.set(key,{key,S,t:0,phase:0,comp:(rnd()-0.5)*0.12,engr:false,dyn:null,gain:{}});
+  stimCol=S.col;
+  if(S.engram && lastEngramKey && STIM[lastEngramKey]){
+    const rc=STIM[lastEngramKey].col;
+    stimCol=S.col.map((c,i)=>lerp(c,rc[i],0.55));   // recall wears its origin's colour
+  }
+  if(S.gain) for(const r in S.gain) trace[r]=Math.min(1.2,(trace[r]||0)+0.30);
+  if(S.entry) for(const org of S.entry) for(const side of [1,-1])
+    for(const i of ids(org,side)) fire(i,1.05,S.col);
+  if(btn){ btn.classList.add("armed"); btn.setAttribute("aria-pressed","true"); }
+}
+
+/* ---- constants the render layer owns ---- */
+const SUB=9;                      // vertices per connection, so a pulse can travel it
+const STAR_PAL=[[0.55,0.80,1.00],[1.00,0.72,0.34],[0.92,0.52,1.00],
+                [1.00,0.96,0.92],[0.42,0.92,1.00]];
+
+/* ============================================================
+   RENDERER — hand-written WebGL, no library, with a Canvas2D
+   fallback. Every external dependency this page had was a way
+   for it to break on someone else's device; it now has none.
+   ============================================================ */
+const canvas=document.getElementById("gl");
+let gl=null, MODE="gl", ctx2=null;
+let VW=0,VH=0,DPR=1;
+
+function makeGL(){
+  try{
+    const o={alpha:false,antialias:false,depth:false,stencil:false,
+             premultipliedAlpha:true,preserveDrawingBuffer:false,
+             powerPreference:"default",failIfMajorPerformanceCaveat:false};
+    gl=canvas.getContext("webgl2",o)||canvas.getContext("webgl",o)||
+       canvas.getContext("experimental-webgl",o);
+  }catch(e){ gl=null; }
+  if(!gl){ MODE="2d"; ctx2=canvas.getContext("2d"); return false; }
+  canvas.addEventListener("webglcontextlost",e=>{
+    e.preventDefault(); gl=null; MODE="2d";
+    try{ ctx2=canvas.getContext("2d"); }catch(err){ ctx2=null; }
+  },false);
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE,gl.ONE);          // pure additive; intensity lives in rgb
+  gl.clearColor(0.020,0.027,0.047,1);
+  return true;
+}
+
+/* ---- matrices ---- */
+function mat4(){return new Float32Array(16);}
+function perspective(out,fovy,aspect,near,far){
+  const f=1/Math.tan(fovy/2), nf=1/(near-far);
+  out[0]=f/aspect;out[1]=0;out[2]=0;out[3]=0;
+  out[4]=0;out[5]=f;out[6]=0;out[7]=0;
+  out[8]=0;out[9]=0;out[10]=(far+near)*nf;out[11]=-1;
+  out[12]=0;out[13]=0;out[14]=2*far*near*nf;out[15]=0;
+  return out;
+}
+function lookAt(out,ex,ey,ez,cx,cy,cz){
+  let zx=ex-cx,zy=ey-cy,zz=ez-cz;
+  let l=Math.hypot(zx,zy,zz)||1; zx/=l;zy/=l;zz/=l;
+  let xx=zz*0-zy*0, xy=0, xz=0;
+  // x = normalize(up × z), up=(0,1,0)
+  xx=1*zz-0*zy; xy=0*zx-0*zz; xz=0*zy-1*zx;
+  l=Math.hypot(xx,xy,xz)||1; xx/=l;xy/=l;xz/=l;
+  const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+  out[0]=xx;out[1]=yx;out[2]=zx;out[3]=0;
+  out[4]=xy;out[5]=yy;out[6]=zy;out[7]=0;
+  out[8]=xz;out[9]=yz;out[10]=zz;out[11]=0;
+  out[12]=-(xx*ex+xy*ey+xz*ez);
+  out[13]=-(yx*ex+yy*ey+yz*ez);
+  out[14]=-(zx*ex+zy*ey+zz*ez);
+  out[15]=1;
+  return out;
+}
+function mul(out,a,b){
+  for(let i=0;i<4;i++){
+    const ai0=a[i],ai1=a[i+4],ai2=a[i+8],ai3=a[i+12];
+    out[i]   =ai0*b[0] +ai1*b[1] +ai2*b[2] +ai3*b[3];
+    out[i+4] =ai0*b[4] +ai1*b[5] +ai2*b[6] +ai3*b[7];
+    out[i+8] =ai0*b[8] +ai1*b[9] +ai2*b[10]+ai3*b[11];
+    out[i+12]=ai0*b[12]+ai1*b[13]+ai2*b[14]+ai3*b[15];
+  }
+  return out;
+}
+const mProj=mat4(), mView=mat4(), mMVP=mat4();
+
+/* ---- shader plumbing ---- */
+function compile(src,type){
+  const s=gl.createShader(type);
+  gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(s)||"shader");
+  return s;
+}
+function program(vs,fs){
+  const p=gl.createProgram();
+  gl.attachShader(p,compile(vs,gl.VERTEX_SHADER));
+  gl.attachShader(p,compile(fs,gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(p)||"link");
+  p._a={}; p._u={};
+  const na=gl.getProgramParameter(p,gl.ACTIVE_ATTRIBUTES);
+  for(let i=0;i<na;i++){const n=gl.getActiveAttrib(p,i).name;p._a[n]=gl.getAttribLocation(p,n);}
+  const nu=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+  for(let i=0;i<nu;i++){const n=gl.getActiveUniform(p,i).name;p._u[n]=gl.getUniformLocation(p,n);}
+  return p;
+}
+function buffer(arr,dyn){
+  const b=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,arr,dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);
+  return b;
+}
+function upload(b,arr){
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,arr);
+}
+
+const FOG=`
+  float fogOf(vec3 p,float dist,float fn,float ff,float fl,float fs){
+    return smoothstep(ff,fn,dist)*smoothstep(fl-fs,fl+2.2,p.y);
+  }`;
+
+/* ---- cortical membrane ---- */
+const CORTEX_VS=`
+  attribute vec3 aPos; attribute vec3 aNrm; attribute float aFold; attribute float aSize;
+  uniform mat4 uMVP; uniform vec3 uCam;
+  uniform float uScale,uFogNear,uFogFar,uFloor,uFloorSpan;
+  varying float vShade,vFold,vFog,vFace,vFres,vWarm;
+  ${FOG}
+  void main(){
+    vec3 d=aPos-uCam;
+    float dist=max(length(d),0.001);
+    vec3 vd=-d/dist;
+    vec3 n=normalize(aNrm);
+    float lam=max(dot(n,normalize(vec3(-0.55,0.75,0.62))),0.0)*0.72
+             +max(dot(n,normalize(vec3(0.72,-0.18,-0.55))),0.0)*0.30+0.20;
+    vFres=pow(1.0-abs(dot(n,vd)),2.1);
+    vShade=lam;
+    vFace=smoothstep(-0.30,0.55,dot(n,vd));
+    vFold=aFold;
+    vWarm=smoothstep(1.0,-9.0,aPos.y);
+    vFog=fogOf(aPos,dist,uFogNear,uFogFar,uFloor,uFloorSpan);
+    gl_PointSize=aSize*uScale/dist;
+    gl_Position=uMVP*vec4(aPos,1.0);
+  }`;
+const CORTEX_FS=`
+  precision highp float;
+  uniform float uAlpha,uWashAmt,uRim;
+  uniform vec3 uSulcus,uCrown,uWash,uRimCol,uWarm;
+  varying float vShade,vFold,vFog,vFace,vFres,vWarm;
+  void main(){
+    vec2 q=gl_PointCoord-0.5;
+    float a=smoothstep(0.5,0.04,length(q));
+    if(a<=0.003) discard;
+    float crown=smoothstep(0.20,0.95,vFold);
+    vec3 col=mix(uSulcus,uCrown,crown)*vShade;
+    col+=uRimCol*vFres*0.42*crown;
+    col=mix(col,uWarm,vWarm*0.62);
+    col+=uWash*uWashAmt*(0.16+0.84*crown)*0.60;
+    float al=uAlpha*(0.26+0.74*crown)*(0.62+uRim*vFres)*mix(0.20,1.0,vFace)*vFog;
+    gl_FragColor=vec4(col*a*al,1.0);
+  }`;
+
+/* ---- emitters: stars, nodes, dust ---- */
+const GLOW_VS=`
+  attribute vec3 aPos; attribute vec3 aCol; attribute float aB; attribute float aSize;
+  uniform mat4 uMVP; uniform vec3 uCam;
+  uniform float uK,uFogNear,uFogFar,uFloor,uFloorSpan;
+  varying vec3 vC; varying float vB,vFog;
+  ${FOG}
+  void main(){
+    float dist=max(length(aPos-uCam),0.001);
+    vFog=fogOf(aPos,dist,uFogNear,uFogFar,uFloor,uFloorSpan);
+    vB=aB; vC=aCol;
+    gl_PointSize=aSize*uK/dist;
+    gl_Position=uMVP*vec4(aPos,1.0);
+  }`;
+const GLOW_FS=`
+  precision highp float;
+  varying vec3 vC; varying float vB,vFog;
+  void main(){
+    float d=length(gl_PointCoord-0.5)*2.0;
+    if(d>1.0) discard;
+    float core=pow(max(0.0,1.0-d),2.6);
+    float halo=pow(max(0.0,1.0-d),1.1)*0.30;
+    float i=(core+halo)*vB*vFog;
+    if(i<0.002) discard;
+    gl_FragColor=vec4(vC*i,1.0);
+  }`;
+
+/* ---- lines: connections, root fibres, plinth ---- */
+const LINE_VS=`
+  attribute vec3 aPos; attribute vec3 aCol; attribute float aB;
+  uniform mat4 uMVP; uniform vec3 uCam;
+  uniform float uFogNear,uFogFar,uFloor,uFloorSpan;
+  varying vec3 vC; varying float vB,vFog;
+  ${FOG}
+  void main(){
+    float dist=max(length(aPos-uCam),0.001);
+    vFog=fogOf(aPos,dist,uFogNear,uFogFar,uFloor,uFloorSpan);
+    vB=aB; vC=aCol;
+    gl_Position=uMVP*vec4(aPos,1.0);
+  }`;
+const LINE_FS=`
+  precision highp float;
+  varying vec3 vC; varying float vB,vFog;
+  void main(){
+    float i=vB*vFog;
+    if(i<0.002) discard;
+    gl_FragColor=vec4(vC*i,1.0);
+  }`;
+
+let pCortex=null,pGlow=null,pLine=null;
+const L={};   // layers
+
+function layer(name,mode,count,attrs,dynamic){
+  const bufs={};
+  for(const k in attrs) bufs[k]={b:gl?buffer(attrs[k],dynamic&&dynamic.indexOf(k)>=0):null,
+                                 a:attrs[k],n:attrs[k].length/count};
+  L[name]={mode,count,bufs};
+  return L[name];
+}
+function bind(p,ly){
+  for(const k in ly.bufs){
+    const loc=p._a[k];
+    if(loc===undefined||loc<0) continue;
+    const s=ly.bufs[k];
+    gl.bindBuffer(gl.ARRAY_BUFFER,s.b);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc,s.n,gl.FLOAT,false,0,0);
+  }
+}
+function setCommon(p,k){
+  gl.uniformMatrix4fv(p._u.uMVP,false,mMVP);
+  gl.uniform3f(p._u.uCam,cpx,cpy,cpz);
+  gl.uniform1f(p._u.uFogNear,T.fogNear);
+  gl.uniform1f(p._u.uFogFar,T.fogFar);
+  gl.uniform1f(p._u.uFloor,T.floorFade);
+  gl.uniform1f(p._u.uFloorSpan,T.floorFadeSpan);
+  if(p._u.uK!==undefined) gl.uniform1f(p._u.uK,k||160);
+}
+
+/* ============================================================
+   GEOMETRY UPLOAD — same data the old renderer used, now held
+   as plain typed arrays so the 2D path can share it.
+   ============================================================ */
+const BRAIN_Y=3.2;                     // baked in, so model space is world space
+let cortexPos=null,cortexNrm=null,cortexFold=null,cortexSize=null,cortexN=0;
+let starPos=null,starCol=null,starB=null,starSize=null,starPh=null,starN=0;
+let trunkPos=null,trunkCol=null,trunkB=null,trunkU=null,trunkF=null,trunkN=0;
+let basePos=null,baseCol=null,baseB=null,baseN=0;
+let dustPos=null,dustCol=null,dustB=null,dustSize=null,dustN=0;
+let floorPos=null,floorCol=null,floorB=null,floorSize=null,floorN=0;
+let curtPos=null,curtCol=null,curtB=null,curtU=null,curtN=0;
+let edgePos=null,edgeColA=null,edgeBr=null,edgeN=0;
+let nodePos=null,nodeColA=null,nodeBr=null,nodeSize=null,nodeN=0;
+
+function buildAll(data){
+  // --- cortex ---
+  cortexN=data.fold.length;
+  cortexPos=new Float32Array(data.pos);
+  for(let i=1;i<cortexPos.length;i+=3) cortexPos[i]+=BRAIN_Y;
+  cortexNrm=new Float32Array(data.nrm);
+  cortexFold=new Float32Array(data.fold);
+  cortexSize=new Float32Array(data.size);
+
+  // --- stars on the gyral crowns ---
+  const sn=Math.min(LOW?1100:T.starCount,(cortexN/2)|0);
+  starN=sn;
+  starPos=new Float32Array(sn*3); starCol=new Float32Array(sn*3);
+  starB=new Float32Array(sn); starSize=new Float32Array(sn); starPh=new Float32Array(sn);
+  for(let i=0;i<sn;i++){
+    let j=(rnd()*cortexN)|0;
+    for(let k=0;k<4&&cortexFold[j]<0.62;k++) j=(rnd()*cortexN)|0;
+    starPos[i*3]=cortexPos[j*3];starPos[i*3+1]=cortexPos[j*3+1];starPos[i*3+2]=cortexPos[j*3+2];
+    const c=STAR_PAL[(rnd()*STAR_PAL.length)|0];
+    starCol[i*3]=c[0];starCol[i*3+1]=c[1];starCol[i*3+2]=c[2];
+    starPh[i]=rnd()*Math.PI*2;
+    starSize[i]=(0.45+rnd()*rnd()*1.5)*2.4+1.0;
+  }
+
+  // --- root trunk ---
+  const NF=LOW?95:T.trunkCount, SEG=26, tp=[],tu=[],tf=[];
+  for(let f=0;f<NF;f++){
+    const th=rnd()*Math.PI*2, rEnd=(T.baseR*0.52)+rnd()*T.baseR*0.46;
+    const sr=0.35+rnd()*2.4, sth=rnd()*Math.PI*2;
+    const sx=Math.cos(sth)*sr*1.05, sz=Math.sin(sth)*sr*1.05-1.2;
+    const sy=-4.6-rnd()*3.4;
+    const wob=(rnd()-0.5)*2.6, spin=(rnd()-0.5)*1.5;
+    let prev=null;
+    for(let s=0;s<=SEG;s++){
+      const t=s/SEG, e=Math.pow(t,1.40);
+      const sw=Math.sin(t*3.4+f*1.7)*wob*(1-t*0.55);
+      const cw=Math.cos(t*2.9+f*2.3)*wob*(1-t*0.55);
+      const a=th+spin*e, rad=lerp(sr*1.05,rEnd,e);
+      const x=Math.cos(a)*rad+sw*0.45+lerp(sx,0,e)*0.4;
+      const z=Math.sin(a)*rad+cw*0.45+lerp(sz,0,e)*0.4;
+      const y=lerp(sy,T.baseY,t*t*0.42+t*0.58)+BRAIN_Y;
+      if(prev){ tp.push(prev[0],prev[1],prev[2],x,y,z); tu.push(prev[3],t); tf.push(f/NF,f/NF); }
+      prev=[x,y,z,t];
+    }
+  }
+  trunkN=tu.length;
+  trunkPos=new Float32Array(tp); trunkU=new Float32Array(tu); trunkF=new Float32Array(tf);
+  trunkCol=new Float32Array(trunkN*3); trunkB=new Float32Array(trunkN);
+
+  // --- plinth ---
+  const seg=88, bp=[];
+  for(let i=0;i<seg;i++){
+    const a0=i/seg*Math.PI*2, a1=(i+1)/seg*Math.PI*2, r=T.baseR*0.98;
+    bp.push(Math.cos(a0)*r,T.baseY-0.5+BRAIN_Y,Math.sin(a0)*r,
+            Math.cos(a1)*r,T.baseY-0.5+BRAIN_Y,Math.sin(a1)*r);
+  }
+  baseN=seg*2;
+  basePos=new Float32Array(bp);
+  baseCol=new Float32Array(baseN*3); baseB=new Float32Array(baseN);
+  for(let i=0;i<baseN;i++){ baseCol[i*3]=1.0;baseCol[i*3+1]=0.60;baseCol[i*3+2]=0.26; }
+
+  // --- the room under the sculpture: rugs, cushions, and a fibre curtain
+  //     hung from the root flare with a gap you walk in through ---
+  const FY=T.baseY+BRAIN_Y-0.15, FR=T.baseR*1.12;
+  const fp=[],fc=[],fb=[],fs=[];
+  const RUG=[[0.62,0.30,0.22],[0.52,0.26,0.30],[0.44,0.32,0.22],[0.58,0.38,0.24]];
+  for(let ring=0;ring<44;ring++){
+    const rr=FR*Math.sqrt((ring+0.5)/44);
+    const cnt=Math.max(8,Math.round(rr*11));
+    const band=RUG[(ring/6|0)%RUG.length];
+    for(let i=0;i<cnt;i++){
+      const a=(i/cnt)*Math.PI*2+ring*0.21;
+      const w=0.10*Math.sin(a*6+ring);
+      fp.push(Math.cos(a)*(rr+w),FY+(rnd()-0.5)*0.06,Math.sin(a)*(rr+w));
+      const k=0.75+rnd()*0.5;
+      fc.push(band[0]*k,band[1]*k,band[2]*k);
+      fb.push(0.055+rnd()*0.05); fs.push(1.3+rnd()*0.9);
+    }
+  }
+  // cushions and folded blankets, kept clear of the walk-in gap
+  for(let c=0;c<9;c++){
+    const a=(c/9)*Math.PI*2+0.35, rr=2.6+rnd()*5.4;
+    const cx=Math.cos(a)*rr, cz=Math.sin(a)*rr;
+    const tint=[[0.90,0.52,0.34],[0.66,0.40,0.72],[0.45,0.55,0.78],[0.86,0.66,0.36]][c%4];
+    for(let k=0;k<70;k++){
+      const t=rnd()*Math.PI*2, u=Math.sqrt(rnd());
+      fp.push(cx+Math.cos(t)*u*0.85,FY+0.06+rnd()*0.30,cz+Math.sin(t)*u*0.85);
+      const g=0.8+rnd()*0.5;
+      fc.push(tint[0]*g,tint[1]*g,tint[2]*g);
+      fb.push(0.10+rnd()*0.09); fs.push(1.8+rnd()*1.4);
+    }
+  }
+  floorN=fb.length;
+  floorPos=new Float32Array(fp); floorCol=new Float32Array(fc);
+  floorB=new Float32Array(fb);   floorSize=new Float32Array(fs);
+
+  const cp=[],cc=[],cb=[],cu=[];
+  const GAP0=0.42, GAP1=1.62;              // the entrance, in radians
+  for(let i=0;i<210;i++){
+    const a=(i/210)*Math.PI*2;
+    if(a>GAP0&&a<GAP1) continue;           // leave the doorway open
+    const rr=T.baseR*(0.86+rnd()*0.22);
+    const top=-5.6-rnd()*2.2+BRAIN_Y, sway=(rnd()-0.5)*0.55;
+    let prev=null;
+    for(let k=0;k<=13;k++){
+      const t=k/13;
+      const y=lerp(top,FY+0.05,t);
+      const aa=a+sway*t*0.12;
+      const r2=rr*(0.90+0.12*t)+Math.sin(t*4.0+i)*0.16;
+      const x=Math.cos(aa)*r2, z=Math.sin(aa)*r2;
+      if(prev){
+        cp.push(prev[0],prev[1],prev[2],x,y,z);
+        cu.push(prev[3],t);
+        for(let q=0;q<2;q++) cc.push(0.72,0.58,0.50);
+        cb.push(0,0);
+      }
+      prev=[x,y,z,t];
+    }
+  }
+  curtN=cu.length;
+  curtPos=new Float32Array(cp); curtCol=new Float32Array(cc);
+  curtB=new Float32Array(cb);   curtU=new Float32Array(cu);
+
+  // --- ambient dust ---
+  dustN=LOW?420:900;
+  dustPos=new Float32Array(dustN*3); dustCol=new Float32Array(dustN*3);
+  dustB=new Float32Array(dustN); dustSize=new Float32Array(dustN);
+  for(let i=0;i<dustN;i++){
+    const r=26+rnd()*70, th=rnd()*Math.PI*2, ph=Math.acos(rnd()*2-1);
+    dustPos[i*3]=Math.sin(ph)*Math.cos(th)*r;
+    dustPos[i*3+1]=Math.cos(ph)*r*0.62-4;
+    dustPos[i*3+2]=Math.sin(ph)*Math.sin(th)*r;
+    dustCol[i*3]=0.72;dustCol[i*3+1]=0.80;dustCol[i*3+2]=0.95;
+    dustSize[i]=(0.4+rnd()*1.1)*1.6;
+    dustB[i]=0.05+rnd()*0.05;
+  }
+}
+
+function buildNet(){
+  // --- edges, subdivided so a pulse can travel along them ---
+  const per=(SUB-1)*2;
+  edgeN=edges.length*per;
+  edgePos=new Float32Array(edgeN*3);
+  edgeColA=new Float32Array(edgeN*3);
+  edgeBr=new Float32Array(edgeN);
+  let o=0,c=0;
+  for(let e=0;e<edges.length;e++){
+    const A=nodes[edges[e].a], B2=nodes[edges[e].b];
+    edges[e].vo=e*per;
+    for(let s=0;s<SUB-1;s++){
+      const t0=s/(SUB-1), t1=(s+1)/(SUB-1);
+      edgePos[o++]=lerp(A.x,B2.x,t0);edgePos[o++]=lerp(A.y,B2.y,t0)+BRAIN_Y;edgePos[o++]=lerp(A.z,B2.z,t0);
+      edgePos[o++]=lerp(A.x,B2.x,t1);edgePos[o++]=lerp(A.y,B2.y,t1)+BRAIN_Y;edgePos[o++]=lerp(A.z,B2.z,t1);
+      for(let k=0;k<2;k++){ edgeColA[c++]=0.46;edgeColA[c++]=0.42;edgeColA[c++]=0.88; }
+    }
+  }
+  // --- units ---
+  nodeN=N;
+  nodePos=new Float32Array(N*3); nodeColA=new Float32Array(N*3);
+  nodeBr=new Float32Array(N); nodeSize=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    nodePos[i*3]=nodes[i].x;nodePos[i*3+1]=nodes[i].y+BRAIN_Y;nodePos[i*3+2]=nodes[i].z;
+    const r=nodes[i].reg;
+    nodeSize[i]=((r==="RETINA"||r==="COCHLEA"||r==="HAND")?1.30:0.85)*3.2;
+  }
+}
+
+function initGPU(){
+  if(!gl) return;
+  pCortex=program(CORTEX_VS,CORTEX_FS);
+  pGlow  =program(GLOW_VS,GLOW_FS);
+  pLine  =program(LINE_VS,LINE_FS);
+  layer("cortex",0,cortexN,{aPos:cortexPos,aNrm:cortexNrm,aFold:cortexFold,aSize:cortexSize});
+  layer("stars",0,starN,{aPos:starPos,aCol:starCol,aB:starB,aSize:starSize},["aB"]);
+  layer("dust",0,dustN,{aPos:dustPos,aCol:dustCol,aB:dustB,aSize:dustSize});
+  layer("floor",0,floorN,{aPos:floorPos,aCol:floorCol,aB:floorB,aSize:floorSize});
+  layer("curtain",1,curtN,{aPos:curtPos,aCol:curtCol,aB:curtB},["aB"]);
+  layer("trunk",1,trunkN,{aPos:trunkPos,aCol:trunkCol,aB:trunkB},["aCol","aB"]);
+  layer("base",1,baseN,{aPos:basePos,aCol:baseCol,aB:baseB},["aB"]);
+  layer("edges",1,edgeN,{aPos:edgePos,aCol:edgeColA,aB:edgeBr},["aCol","aB"]);
+  layer("nodes",0,nodeN,{aPos:nodePos,aCol:nodeColA,aB:nodeBr,aSize:nodeSize},["aCol","aB"]);
+}
+
+/* ---- draw ---- */
+function drawGL(){
+  gl.viewport(0,0,VW,VH);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  gl.useProgram(pGlow);
+  setCommon(pGlow,90*DPR);
+  bind(pGlow,L.dust);
+  upload(L.dust.bufs.aB.b,dustB);
+  gl.drawArrays(gl.POINTS,0,dustN);
+
+  setCommon(pGlow,120*DPR);
+  bind(pGlow,L.floor);
+  gl.drawArrays(gl.POINTS,0,floorN);
+
+  gl.useProgram(pLine); setCommon(pLine);
+  bind(pLine,L.curtain); upload(L.curtain.bufs.aB.b,curtB);
+  gl.drawArrays(gl.LINES,0,curtN);
+  bind(pLine,L.base);   upload(L.base.bufs.aB.b,baseB);
+  gl.drawArrays(gl.LINES,0,baseN);
+  bind(pLine,L.trunk);
+  upload(L.trunk.bufs.aB.b,trunkB); upload(L.trunk.bufs.aCol.b,trunkCol);
+  gl.drawArrays(gl.LINES,0,trunkN);
+
+  gl.useProgram(pCortex);
+  setCommon(pCortex);
+  gl.uniform1f(pCortex._u.uScale,T.cortexPointScale*(VH/900));
+  gl.uniform1f(pCortex._u.uAlpha,T.cortexAlpha*(1.0-0.50*SPOT));
+  gl.uniform1f(pCortex._u.uRim,T.rimGain);
+  gl.uniform3f(pCortex._u.uSulcus,0.17,0.10,0.34);
+  gl.uniform3f(pCortex._u.uCrown,0.63,0.53,0.98);
+  gl.uniform3f(pCortex._u.uRimCol,0.86,0.55,1.00);
+  gl.uniform3f(pCortex._u.uWarm,1.00,0.62,0.30);
+  gl.uniform3f(pCortex._u.uWash,stimCol[0],stimCol[1],stimCol[2]);
+  gl.uniform1f(pCortex._u.uWashAmt,washAmt*0.45);
+  bind(pCortex,L.cortex);
+  gl.drawArrays(gl.POINTS,0,cortexN);
+
+  gl.useProgram(pLine); setCommon(pLine);
+  bind(pLine,L.edges);
+  upload(L.edges.bufs.aB.b,edgeBr); upload(L.edges.bufs.aCol.b,edgeColA);
+  gl.drawArrays(gl.LINES,0,edgeN);
+
+  gl.useProgram(pGlow);
+  setCommon(pGlow,150*DPR);
+  bind(pGlow,L.stars); upload(L.stars.bufs.aB.b,starB);
+  gl.drawArrays(gl.POINTS,0,starN);
+  setCommon(pGlow,140*DPR);
+  bind(pGlow,L.nodes);
+  upload(L.nodes.bufs.aB.b,nodeBr); upload(L.nodes.bufs.aCol.b,nodeColA);
+  gl.drawArrays(gl.POINTS,0,nodeN);
+}
+
+/* ---- Canvas2D fallback: same data, decimated ---- */
+const CC2=new Map();
+function css2(r,g,b,a){
+  const k=(((r*15)|0)<<20)|(((g*15)|0)<<14)|(((b*15)|0)<<8)|((a*31)|0);
+  let v=CC2.get(k);
+  if(v===undefined){
+    v="rgba("+Math.round(r*255)+","+Math.round(g*255)+","+Math.round(b*255)+","+
+      Math.min(1,a).toFixed(2)+")";
+    CC2.set(k,v);
+  }
+  return v;
+}
+let fx2=0,fy2=0,fz2=1,rx2=1,ry2=0,rz2=0,ux2=0,uy2=1,uz2=0,FOCAL2=800;
+function basis2(){
+  fx2=-cpx; fy2=TARGET_Y-cpy; fz2=-cpz;
+  const fl=Math.hypot(fx2,fy2,fz2)||1; fx2/=fl;fy2/=fl;fz2/=fl;
+  const ax=-fz2, az=fx2, rl=Math.hypot(ax,az)||1;
+  rx2=ax/rl; ry2=0; rz2=az/rl;
+  ux2=ry2*fz2-rz2*fy2; uy2=rz2*fx2-rx2*fz2; uz2=rx2*fy2-ry2*fx2;
+  FOCAL2=(VH*0.5)/Math.tan((camFov*Math.PI/180)/2);
+}
+function draw2D(){
+  if(!ctx2) return;
+  basis2();
+  ctx2.setTransform(1,0,0,1,0,0);
+  ctx2.globalCompositeOperation="source-over";
+  ctx2.fillStyle="#05070c"; ctx2.fillRect(0,0,VW,VH);
+  ctx2.globalCompositeOperation="lighter";
+  const hw=VW*0.5, hh=VH*0.5;
+  let last="";
+  // the room first, so the sculpture sits inside it
+  for(let i=0;i<floorN;i+=LOW?3:2){
+    const dx=floorPos[i*3]-cpx,dy=floorPos[i*3+1]-cpy,dz=floorPos[i*3+2]-cpz;
+    const vz=dx*fx2+dy*fy2+dz*fz2; if(vz<0.3) continue;
+    const k=FOCAL2/vz;
+    const sx=hw+(dx*rx2+dy*ry2+dz*rz2)*k; if(sx<-4||sx>VW+4) continue;
+    const sy=hh-(dx*ux2+dy*uy2+dz*uz2)*k; if(sy<-4||sy>VH+4) continue;
+    const c=css2(floorCol[i*3],floorCol[i*3+1],floorCol[i*3+2],
+                 Math.min(1,floorB[i]*3.2));
+    if(c!==last){ ctx2.fillStyle=c; last=c; }
+    const s=Math.max(1.2,1.9*DPR);
+    ctx2.fillRect(sx-s*0.5,sy-s*0.5,s,s);
+  }
+  const step=LOW?12:7;                 // the membrane is too dense for 2D
+  for(let i=0;i<cortexN;i+=step){
+    const px=cortexPos[i*3],py=cortexPos[i*3+1],pz=cortexPos[i*3+2];
+    const dx=px-cpx,dy=py-cpy,dz=pz-cpz;
+    const vz=dx*fx2+dy*fy2+dz*fz2;
+    if(vz<0.3) continue;
+    const k=FOCAL2/vz;
+    const sx=hw+(dx*rx2+dy*ry2+dz*rz2)*k; if(sx<-4||sx>VW+4) continue;
+    const sy=hh-(dx*ux2+dy*uy2+dz*uz2)*k; if(sy<-4||sy>VH+4) continue;
+    const f=cortexFold[i];
+    const a=Math.min(1,(0.10+0.42*f)*Math.min(1,60/vz));
+    const c=css2(0.36+0.34*f,0.26+0.34*f,0.58+0.36*f,a);
+    if(c!==last){ ctx2.fillStyle=c; last=c; }
+    const s=Math.max(1.2,2.0*DPR*(0.5+f*0.6));
+    ctx2.fillRect(sx-s*0.5,sy-s*0.5,s,s);
+  }
+  for(let i=0;i<nodeN;i++){
+    const b=nodeBr[i]; if(b<0.05) continue;
+    const dx=nodePos[i*3]-cpx,dy=nodePos[i*3+1]-cpy,dz=nodePos[i*3+2]-cpz;
+    const vz=dx*fx2+dy*fy2+dz*fz2; if(vz<0.3) continue;
+    const k=FOCAL2/vz;
+    const sx=hw+(dx*rx2+dy*ry2+dz*rz2)*k, sy=hh-(dx*ux2+dy*uy2+dz*uz2)*k;
+    if(sx<-6||sy<-6||sx>VW+6||sy>VH+6) continue;
+    const c=css2(nodeColA[i*3],nodeColA[i*3+1],nodeColA[i*3+2],Math.min(1,b*1.1));
+    if(c!==last){ ctx2.fillStyle=c; last=c; }
+    const s=Math.max(1.5,(1.4+b*4.0)*DPR);
+    ctx2.fillRect(sx-s*0.5,sy-s*0.5,s,s);
+  }
+  ctx2.globalCompositeOperation="source-over";
+}
+
+/* ============================================================
+   CAMERA
+   ============================================================ */
+// Left is the watchable pace this was tuned at. Right approaches real
+// conduction time: retina to V1 is about 70 ms in a person and about 1.7 s
+// here at 1x, so the top of the range is roughly 25x.
+let SIMSPEED=1;
+const SPEED_MAX=25;
+function setSpeed(v){
+  SIMSPEED=Math.pow(SPEED_MAX,v/100);
+  const el=document.getElementById("spd-val");
+  if(!el) return;
+  const ms=Math.round(1700/SIMSPEED);
+  el.innerHTML=(SIMSPEED<1.05?"&times;1.0 watchable":
+    (SIMSPEED>=SPEED_MAX*0.985?"&times;"+SPEED_MAX+" real time":
+     "&times;"+SIMSPEED.toFixed(1)+" \u00b7 "+ms+" ms"));
+}
+let TARGET_Y=-4.0, camFov=34;
+let SPOT=0;   // 0 at rest, 1 while a stimulus travels
+const cam={az:-0.94, el:0.06, r:64, tAz:-0.94, tEl:0.06, tR:64, drift:true};
+let cpx=0,cpy=0,cpz=0;
+function updateCamera(dt){
+  if(cam.drift && !REDUCED) cam.tAz+=dt*0.024;
+  cam.az=lerp(cam.az,cam.tAz,1-Math.exp(-dt/0.28));
+  cam.el=lerp(cam.el,cam.tEl,1-Math.exp(-dt/0.28));
+  cam.r =lerp(cam.r ,cam.tR ,1-Math.exp(-dt/0.30));
+  const ce=Math.cos(cam.el);
+  cpx=Math.sin(cam.az)*ce*cam.r;
+  cpy=Math.sin(cam.el)*cam.r+TARGET_Y;
+  cpz=Math.cos(cam.az)*ce*cam.r;
+  perspective(mProj,camFov*Math.PI/180,VW/Math.max(VH,1),0.5,400);
+  lookAt(mView,cpx,cpy,cpz,0,TARGET_Y,0);
+  mul(mMVP,mProj,mView);
+}
+let dragging=false,lastX=0,lastY=0,pinch=0,userZoomed=false;
+canvas.addEventListener("pointerdown",e=>{
+  dragging=true;cam.drift=false;lastX=e.clientX;lastY=e.clientY;
+  canvas.classList.add("dragging");
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+  const h=document.getElementById("hint"); if(h) h.classList.add("gone");
+});
+canvas.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  cam.tAz-=(e.clientX-lastX)*0.0062;
+  cam.tEl=clamp(cam.tEl+(e.clientY-lastY)*0.0050,-0.85,0.98);
+  lastX=e.clientX; lastY=e.clientY;
+});
+const endDrag=()=>{dragging=false;canvas.classList.remove("dragging");
+  setTimeout(()=>{if(!dragging)cam.drift=true;},4200);};
+canvas.addEventListener("pointerup",endDrag);
+canvas.addEventListener("pointercancel",endDrag);
+canvas.addEventListener("wheel",e=>{e.preventDefault();userZoomed=true;
+  cam.tR=clamp(cam.tR+e.deltaY*0.024,30,112);},{passive:false});
+canvas.addEventListener("touchmove",e=>{
+  if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                       e.touches[0].clientY-e.touches[1].clientY);
+    if(pinch){userZoomed=true;cam.tR=clamp(cam.tR+(pinch-d)*0.075,30,112);}
+    pinch=d; e.preventDefault();
+  }},{passive:false});
+canvas.addEventListener("touchend",()=>{pinch=0;});
+
+let lastPortrait=null;
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  DPR=Math.min(devicePixelRatio||1, LOW?1.5:2);
+  VW=Math.round(w*DPR); VH=Math.round(h*DPR);
+  canvas.width=VW; canvas.height=VH;
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  const portrait=(w/h)<0.88;
+  camFov=34;
+  if(portrait!==lastPortrait){
+    lastPortrait=portrait;
+    TARGET_Y=portrait?-9.4:-6.3;
+    if(!userZoomed){ cam.tR=portrait?76:64; cam.r=cam.tR; }
+  }
+}
+addEventListener("resize",resize);
+addEventListener("orientationchange",()=>setTimeout(resize,220));
+
+function placeReadout(){
+  const ro=document.getElementById("readout");
+  const cs=document.getElementById("console");
+  const small=innerWidth<=620;
+  if(small && ro.parentElement!==cs){ cs.insertBefore(ro,cs.firstChild); ro.classList.add("inpanel"); }
+  else if(!small && ro.parentElement===cs){ document.body.appendChild(ro); ro.classList.remove("inpanel"); }
+}
+addEventListener("resize",placeReadout);
+
+/* ============================================================
+   CONSOLE UI
+   ============================================================ */
+const ROWS=[
+  {id:"row-1",keys:["LIGHT","SOUND","TOUCH"]},
+  {id:"row-2",keys:["FEAR","PAIN","CALM"]},
+  {id:"row-3",keys:["REMEMBER","IMAGINE","PREDICT","DECIDE"]}
+];
+const hexOf=c=>"#"+[0,1,2].map(i=>Math.round(clamp(c[i],0,1)*255).toString(16).padStart(2,"0")).join("");
+const els={};
+function buildUI(){
+  const sp=document.getElementById("spd");
+  if(sp){ sp.addEventListener("input",()=>setSpeed(+sp.value)); setSpeed(0); }
+  for(const R of ROWS){
+    const host=document.getElementById(R.id);
+    for(const k of R.keys){
+      const b=document.createElement("button");
+      b.className="key";
+      b.type="button";
+      const col=hexOf(STIM[k].col);
+      b.style.setProperty("--k",col);
+      b.innerHTML='<span class="led"></span><span class="lab">'+k+'</span>';
+      b.setAttribute("aria-pressed","false");
+      b.addEventListener("click",()=>{
+        toggleStim(k);
+        if(actv.size){
+          const last=[...actv.keys()].pop();
+          document.documentElement.style.setProperty("--stim",hexOf(STIM[last].col));
+        }
+        note("");
+      });
+      host.appendChild(b);
+      els[k]=b;
+    }
+  }
+}
+let noteTimer=0;
+function note(s){
+  const n=document.getElementById("r-note");
+  n.textContent=s;
+  clearTimeout(noteTimer);
+  if(s) noteTimer=setTimeout(()=>{n.textContent="";},4200);
+}
+
+const rStim=()=>document.getElementById("r-stim");
+function updateHUD(){
+  const keys=[...actv.keys()];
+  const lead=keys.length?actv.get(keys[keys.length-1]):null;
+  document.getElementById("r-time").textContent=(lead?lead.t:0).toFixed(2)+" s";
+  document.getElementById("r-fire").textContent=firingCount+" / "+N;
+  document.getElementById("r-bar").style.width=clamp(firingCount/(N*0.42),0,1)*100+"%";
+  rStim().textContent=keys.length?(keys.length===1?keys[0]:keys.length+" RUNNING"):"—";
+  let st="Resting state";
+  if(keys.length===1 && lead){
+    for(const sg of lead.S.stages) if(lead.t>=sg[0]) st=sg[1];
+    if(lead.dyn) st=lead.dyn;
+  }else if(keys.length>1){
+    st=keys.join(" + ");
+  }
+  document.getElementById("r-stage").textContent=st;
+  // the console is lit by the sculpture, not by itself
+  const cs=document.getElementById("console");
+  const R=Math.round(stimCol[0]*255),G=Math.round(stimCol[1]*255),B=Math.round(stimCol[2]*255);
+  cs.style.boxShadow=
+    "0 -54px 100px -34px rgba("+R+","+G+","+B+","+(0.16+washAmt*0.80).toFixed(3)+"),"+
+    "inset 0 1px 0 rgba(215,205,255,.12), 0 -1px 0 rgba(0,0,0,.6)";
+  const tk=Object.keys(trace).sort((a,b)=>trace[b]-trace[a]).slice(0,innerWidth<=620?2:3);
+  document.getElementById("r-trace").textContent=
+    tk.length?tk.map(k=>k+" "+trace[k].toFixed(2)).join(" · "):"—";
+}
+
+/* ============================================================
+   FRAME LOOP
+   ============================================================ */
+let last=performance.now(), hudClock=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=(now-last)/1000; last=now;
+  if(dt>0.1) dt=0.1;
+  const tSec=now/1000;
+
+  // Speed scales simulation time, not frame time. Large steps would break
+  // the integrate-and-fire units, so the extra time is run as substeps.
+  let acc=dt*SIMSPEED;
+  const hMax=1/90, maxSub=LOW?14:34;
+  let sub=0;
+  while(acc>1e-4 && sub<maxSub){
+    const h=Math.min(acc,hMax);
+    stepSim(h); acc-=h; sub++;
+  }
+  updateCamera(dt);
+
+  // Spotlight: while a stimulus is travelling, the structure recedes so the
+  // signal is unmistakably the subject. Colour means activity, nothing else.
+  SPOT=Math.min(1,washAmt/0.50);
+  const amb=1-0.62*SPOT;
+
+  // units
+  for(let i=0;i<N;i++){
+    nodeBr[i]=Math.min(1.4,act[i])*1.85+0.035*amb;
+    nodeColA[i*3]=tint[i*3];nodeColA[i*3+1]=tint[i*3+1];nodeColA[i*3+2]=tint[i*3+2];
+  }
+
+  // connections — a travelling gaussian per pulse in flight
+  edgeBr.fill(0);
+  const SEGV=(SUB-1)*2, W=T.pulseWidth;
+  for(let e=0;e<edges.length;e++){
+    const E=edges[e], base=E.vo;
+    const glow=T.edgeBase*(E.cls==="afferent"||E.cls==="chain"?1.9:1.0)*amb;
+    for(let v=0;v<SEGV;v++) edgeBr[base+v]=glow;
+    if(!E.p.length) continue;
+    const cA=E.p[0].c;
+    if(cA) for(let v=0;v<SEGV;v++){
+      edgeColA[(base+v)*3]=cA[0];edgeColA[(base+v)*3+1]=cA[1];edgeColA[(base+v)*3+2]=cA[2];
+    }
+    for(let k=0;k<E.p.length;k++){
+      const p=E.p[k];
+      for(let s2=0;s2<SUB-1;s2++){
+        const t0=s2/(SUB-1), t1=(s2+1)/(SUB-1);
+        const d0=(t0-p.t)/W, d1=(t1-p.t)/W;
+        edgeBr[base+s2*2]  +=Math.exp(-d0*d0)*p.a*2.6;
+        edgeBr[base+s2*2+1]+=Math.exp(-d1*d1)*p.a*2.6;
+      }
+    }
+  }
+
+  // stars twinkle, roots shimmer, plinth breathes
+  for(let i=0;i<starN;i++)
+    starB[i]=(0.34+0.66*Math.pow(0.5+0.5*Math.sin(tSec*1.35+starPh[i]),2.2))*1.05*(0.35+0.65*amb);
+  for(let i=0;i<trunkN;i++){
+    const u=trunkU[i], f=trunkF[i];
+    const sh=Math.pow(0.5+0.5*Math.sin((u*7.0)-tSec*1.6+f*22.0),7.0);
+    trunkB[i]=(0.105+sh*0.40+washAmt*0.22)*(0.35+0.65*(1.0-u*0.55));
+    const w=Math.min(1,Math.max(0,(u-0.05)/0.70));
+    // scale brightness with the shimmer rather than adding white to every
+    // channel, or the violet-to-amber run of the roots washes out
+    const g=1.0+sh*0.85;
+    trunkCol[i*3]  =lerp(0.52,1.00,w)*g;
+    trunkCol[i*3+1]=lerp(0.42,0.62,w)*g;
+    trunkCol[i*3+2]=lerp(0.98,0.26,w)*g;
+  }
+  for(let i=0;i<curtN;i++){
+    const u=curtU[i];
+    curtB[i]=(0.045+0.055*(1-u))*(1.0+washAmt*0.8)*
+             (0.75+0.25*Math.sin(tSec*0.5+u*3.0+i*0.06));
+  }
+  const bb=0.55+washAmt*0.45;
+  for(let i=0;i<baseN;i++) baseB[i]=bb;
+
+  if(MODE==="gl"&&gl) drawGL(); else draw2D();
+
+  hudClock+=dt;
+  if(hudClock>0.09){ hudClock=0; updateHUD(); }
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+const ldBar=document.getElementById("ld-bar"), ldMsg=document.getElementById("ld-msg");
+function progress(pct,msg){ ldBar.style.right=(100-pct)+"%"; if(msg) ldMsg.textContent=msg; }
+
+function boot(){
+  progress(12,"Resolving cortical surface");
+  requestAnimationFrame(()=>setTimeout(()=>{
+    const data=buildCortex();
+    buildAll(data);
+    progress(52,"Seating neural populations");
+    setTimeout(()=>{
+      buildGraph();
+      progress(68,"Tracing sensory pathways");
+      setTimeout(()=>{
+        buildEdges();
+        initSim();
+        buildNet();
+        buildUI();          // controls exist before anything that can fail
+        placeReadout();
+        resize();
+        const ok=makeGL();
+        if(ok){
+          try{ initGPU(); }
+          catch(err){ MODE="2d"; gl=null;
+            try{ ctx2=canvas.getContext("2d"); }catch(e){ ctx2=null; } }
+        }
+        progress(100,"Ready");
+        document.getElementById("foot-left").textContent=
+          nodes.length+" units · "+edges.length+" connections · 10 inputs"+
+          (MODE==="2d"?" · simplified rendering":"");
+        setTimeout(()=>{
+          document.getElementById("loader").classList.add("gone");
+          setTimeout(()=>document.getElementById("hint").classList.add("gone"),9000);
+        },420);
+        last=performance.now();
+        requestAnimationFrame(frame);
+      },30);
+    },30);
+  },40));
+}
+boot();
+})();
+</script>
