@@ -44,7 +44,7 @@
   }
   .spec h1 span{display:block;font-weight:300;font-size:10.5px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);margin-top:5px;}
-  .spec-close,.fab,.spec-scrim{display:none;}
+  .spec-close,.fab{display:none;}
   .grp{display:flex;flex-direction:column;gap:6px;}
   .grp > h2{
     margin:0;font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
@@ -106,6 +106,27 @@
     font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
   }
   .keys{display:flex;flex-wrap:wrap;gap:6px;}
+  .speed{
+    display:flex;align-items:center;gap:10px;
+    font-family:"IBM Plex Mono",monospace;font-size:9.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    padding-top:2px;
+  }
+  .speed input{
+    -webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:80px;
+    height:2px;background:var(--rule-hi);border-radius:2px;outline:none;cursor:pointer;
+  }
+  .speed input::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    background:var(--sig);cursor:pointer;box-shadow:0 0 9px -1px var(--sig);
+  }
+  .speed input::-moz-range-thumb{
+    width:13px;height:13px;border:none;border-radius:50%;
+    background:var(--sig);cursor:pointer;box-shadow:0 0 9px -1px var(--sig);
+  }
+  .speed input:focus-visible{outline:1px solid var(--sig);outline-offset:3px;}
+  .speed .val{color:var(--bright);min-width:104px;text-align:right;
+    font-variant-numeric:tabular-nums;}
   button.k{
     appearance:none;flex:1 1 88px;min-width:0;
     background:#11151C;border:1px solid var(--rule);border-radius:2px;
@@ -203,6 +224,11 @@
     }
     button.t{padding:8px 10px;font-size:11px;min-height:36px;}
     button.k{flex:1 1 92px;font-size:11px;padding:12px 6px;min-height:42px;}
+    .speed{font-size:11px;gap:8px;}
+    .speed input{min-height:28px;}
+    .speed input::-webkit-slider-thumb{width:18px;height:18px;}
+    .speed input::-moz-range-thumb{width:18px;height:18px;}
+    .speed .val{min-width:0;}
   }
 </style>
 </head>
@@ -274,8 +300,14 @@
 </div>
 
 <div class="bar">
-  <div class="lab">Pathway programs</div>
+  <div class="lab">Pathway programs · toggle any combination</div>
   <div class="keys" id="keys"></div>
+  <div class="speed">
+    <span>Speed</span>
+    <input type="range" id="spd" min="0" max="100" value="0"
+           aria-label="Playback speed, watchable to real time">
+    <span class="val" id="spd-val">&times;1.0 watchable</span>
+  </div>
 </div>
 
 <script>
@@ -612,11 +644,12 @@ const PROG={
 };
 
 /* ============================================================
-   PROGRAM PLAYBACK — a fixed-width comet of lit LEDs travelling
-   each run at a constant rate, with a fading trail so the route
-   stays readable after the head has passed.
+   PROGRAM PLAYBACK — every program is a latch. Toggle one on and
+   it loops until you toggle it off; any combination can run at
+   once, which is how the real console should behave.
    ============================================================ */
-let prog=null, pt=0, active=[], litCount=0;
+const running=new Map();          // key -> {prog, pt, active, total}
+let litCount=0;
 const HEADPX=11;    // LEDs in the bright head
 const TRAILPX=24;   // LEDs of fading trail behind it
 const PXPS=32;      // LEDs per second
@@ -625,66 +658,95 @@ function hex2rgb(h){
   const n=parseInt(h.slice(1),16);
   return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255];
 }
+// Left is the watchable pace this was designed at. Right approaches real
+// conduction time: retina to V1 is about 70 ms in a person, and about 1.7 s
+// here at 1x, so the top of the range is roughly 25x.
+let SPEED=1;
+const SPEED_MAX=25;
+function setSpeed(v){
+  SPEED=Math.pow(SPEED_MAX,v/100);
+  const el=document.getElementById("spd-val");
+  const ms=Math.round(1700/SPEED);
+  el.innerHTML=(SPEED<1.05?"&times;1.0 watchable":
+    (SPEED>=SPEED_MAX*0.985?"&times;"+SPEED_MAX+" real time":
+     "&times;"+SPEED.toFixed(1)+" \u00b7 "+ms+" ms"));
+}
 
-function play(key){
-  prog=PROG[key]; pt=0; active=[];
-  document.documentElement.style.setProperty("--sig",prog.col);
+function programTotal(active){
+  let end=0;
+  for(const a of active){
+    const n=Math.max(a.R.count,1);
+    const t=a.t0+(n+HEADPX+TRAILPX)/PXPS;
+    if(t>end) end=t;
+  }
+  return end+1.4;                 // a beat of darkness before it repeats
+}
+function toggle(key){
+  const btn=document.getElementById("k-"+key);
+  if(running.has(key)){
+    running.delete(key);
+    if(btn){ btn.classList.remove("on"); btn.setAttribute("aria-pressed","false"); }
+    const rest=[...running.keys()];
+    if(rest.length) document.documentElement.style.setProperty("--sig",PROG[rest[rest.length-1]].col);
+    return;
+  }
+  const prog=PROG[key], active=[];
   for(const [t,id,dir] of prog.seq){
     const R=RUNS.find(r=>r.id===id);
     if(R) active.push({R,t0:t,dir});
   }
-  const all=document.querySelectorAll("button.k");
-  for(let i=0;i<all.length;i++) all[i].classList.remove("on");
-  const btn=document.getElementById("k-"+key);
-  if(btn) btn.classList.add("on");
+  running.set(key,{prog,pt:0,active,total:programTotal(active)});
+  document.documentElement.style.setProperty("--sig",prog.col);
+  if(btn){ btn.classList.add("on"); btn.setAttribute("aria-pressed","true"); }
 }
 
 function step(dt){
-  pt+=dt;
-  // Idle structure is deliberately near-dark, and dims further while a
+  // Idle structure is deliberately near-dark, and dims further while any
   // program runs, so the travelling signal is unmistakably the subject.
-  const amb=prog?0.58:1.0;
+  const amb=running.size?0.58:1.0;
   runBright.fill(0.042*amb);
   nodeBright.fill(0.075*amb);
   litCount=0;
-  const sig=prog?hex2rgb(prog.col):RUN_BASE;
-  let anyRunning=false;
 
-  for(const a of active){
-    const el=pt-a.t0;
-    if(el<0) continue;
-    const R=a.R, n=R.count, nn=Math.max(n,1);
-    const head=(el*PXPS)/nn;
-    const HEAD=HEADPX/nn;
-    const trailK=nn/TRAILPX;
-    if(head>1+TRAILPX/nn+0.15) continue;     // finished, trail faded
-    anyRunning=anyRunning||head<=1.0;
-    for(let i=0;i<n;i++){
-      const u=n<2?0:i/(n-1);
-      const uu=a.dir>0?u:1-u;
-      const d=head-uu;
-      if(d<0) continue;
-      let v=2.40*Math.exp(-(d*d)/(HEAD*HEAD));
-      if(TRAIL) v=Math.max(v,0.30*Math.exp(-d*trailK*1.35));
-      if(v<=0.004) continue;
-      const idx=R.i0+i;
-      if(v>runBright[idx]){
-        runBright[idx]=v;
-        runCol[idx*3]=sig[0];runCol[idx*3+1]=sig[1];runCol[idx*3+2]=sig[2];
+  for(const st of running.values()){
+    st.pt+=dt*SPEED;
+    if(st.pt>st.total) st.pt=0;   // loop
+    const sig=hex2rgb(st.prog.col);
+    for(const a of st.active){
+      const el=st.pt-a.t0;
+      if(el<0) continue;
+      const R=a.R, n=R.count, nn=Math.max(n,1);
+      const head=(el*PXPS)/nn;
+      const HEAD=HEADPX/nn;
+      const trailK=nn/TRAILPX;
+      if(head>1+TRAILPX/nn+0.15) continue;
+      for(let i=0;i<n;i++){
+        const u=n<2?0:i/(n-1);
+        const uu=a.dir>0?u:1-u;
+        const d=head-uu;
+        if(d<0) continue;
+        let v=2.40*Math.exp(-(d*d)/(HEAD*HEAD));
+        if(TRAIL) v=Math.max(v,0.30*Math.exp(-d*trailK*1.35));
+        if(v<=0.004) continue;
+        const idx=R.i0+i;
+        if(v>runBright[idx]){
+          runBright[idx]=v;
+          runCol[idx*3]=sig[0];runCol[idx*3+1]=sig[1];runCol[idx*3+2]=sig[2];
+        }
+        if(v>0.18) litCount++;
       }
-      if(v>0.18) litCount++;
-    }
-    if(head>0.02){
-      const ri=RUNS.indexOf(R);
-      for(let k=0;k<nodePix.length;k++){
-        if(nodePix[k].run!==ri) continue;
-        const isEnd=(k%(B.nodePx*2))>=B.nodePx;
-        const reached=a.dir>0?(isEnd?head>0.98:true):(isEnd?true:head>0.98);
-        if(!reached) continue;
-        const v=clamp(1.90-Math.abs(head-(isEnd?1:0))*1.3,0.10,1.90);
-        if(v>nodeBright[k]){
-          nodeBright[k]=v;
-          nodeCol[k*3]=sig[0];nodeCol[k*3+1]=sig[1];nodeCol[k*3+2]=sig[2];
+      if(head>0.02){
+        const ri=RUNS.indexOf(R);
+        for(let k=0;k<nodePix.length;k++){
+          if(nodePix[k].run!==ri) continue;
+          const isEnd=(k%(B.nodePx*2))>=B.nodePx;
+          const reached=a.dir>0?(isEnd?head>0.98:true):(isEnd?true:head>0.98);
+          if(!reached) continue;
+          const v=clamp(1.90-Math.abs(head-(isEnd?1:0))*1.3,0.10,1.90);
+          if(v>nodeBright[k]){
+            nodeBright[k]=v;
+            nodeCol[k*3]=sig[0];nodeCol[k*3+1]=sig[1];nodeCol[k*3+2]=sig[2];
+          }
         }
       }
     }
@@ -696,12 +758,6 @@ function step(dt){
     const p=armPix[i];
     const w=Math.sin(tt*0.7+p.z*0.30-p.y*0.16)*0.5+0.5;
     armBright[i]=SHOW_ARM?((0.045+0.060*w*w)*amb):0;
-  }
-
-  if(prog && !anyRunning && pt>prog.seq[prog.seq.length-1][0]+3.2){
-    prog=null;
-    const all=document.querySelectorAll("button.k");
-    for(let i=0;i<all.length;i++) all[i].classList.remove("on");
   }
   updateStatus();
 }
@@ -784,7 +840,7 @@ function drawFrame(){
   // conduit cage first, underneath everything
   if(SHOW_ARM){
     ctx.globalCompositeOperation="source-over";
-    ctx.strokeStyle="rgba(40,48,62,"+((SHOW_ADDR?0.24:0.52)*(prog?0.70:1))+")";
+    ctx.strokeStyle="rgba(40,48,62,"+((SHOW_ADDR?0.24:0.52)*(running.size?0.70:1))+")";
     ctx.lineWidth=Math.max(1,DPR*0.6);
     ctx.beginPath();
     for(const line of ribs.concat(arcs)){
@@ -925,7 +981,8 @@ function buildUI(){
     b.className="k"; b.type="button"; b.id="k-"+k;
     b.style.setProperty("--c",PROG[k].col);
     b.textContent=PROG[k].label;
-    b.addEventListener("click",()=>play(k));
+    b.setAttribute("aria-pressed","false");
+    b.addEventListener("click",()=>toggle(k));
     host.appendChild(b);
   }
   const rl=document.getElementById("runlist");
@@ -940,6 +997,9 @@ function buildUI(){
     const el=document.getElementById(id);
     el.addEventListener("click",()=>{set(!get());el.classList.toggle("on",get());});
   };
+  const sp=document.getElementById("spd");
+  sp.addEventListener("input",()=>setSpeed(+sp.value));
+  setSpeed(0);
   bind("t-arm",()=>SHOW_ARM,v=>SHOW_ARM=v);
   bind("t-trail",()=>TRAIL,v=>TRAIL=v);
   bind("t-addr",()=>SHOW_ADDR,v=>{SHOW_ADDR=v;});
@@ -1006,11 +1066,19 @@ function fillSpec(){
 }
 function updateStatus(){
   const nm=document.getElementById("st-name"), sg=document.getElementById("st-seg");
-  if(!prog){ nm.textContent="Resting"; sg.innerHTML='idle · <span>'+litCount+'</span> px lit'; }
-  else{
-    nm.textContent=prog.label;
-    const i=Math.min(prog.cap.length-1,Math.floor(pt/ (prog.seq[prog.seq.length-1][0]+3)*prog.cap.length));
-    sg.innerHTML=prog.cap[Math.max(0,i)]+' · <span class="seg">'+litCount+'</span> px lit';
+  const keys=[...running.keys()];
+  if(!keys.length){
+    nm.textContent="Resting";
+    sg.innerHTML='idle · <span>'+litCount+'</span> px lit';
+  }else if(keys.length===1){
+    const st=running.get(keys[0]);
+    nm.textContent=st.prog.label;
+    const i=Math.min(st.prog.cap.length-1,Math.floor(st.pt/st.total*st.prog.cap.length));
+    sg.innerHTML=st.prog.cap[Math.max(0,i)]+' · <span class="seg">'+litCount+'</span> px lit';
+  }else{
+    nm.textContent=keys.length+" running";
+    sg.innerHTML=keys.map(k=>PROG[k].label).join(" + ")+
+                 ' · <span class="seg">'+litCount+'</span> px lit';
   }
   for(const R of RUNS){
     const el=document.getElementById("rl-"+R.id);
